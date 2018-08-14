@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <time.h>
 #include <thread>
+#include <string>
 #include <cstring>
 using namespace std;
 
@@ -47,13 +48,16 @@ streamsize inline getRealSize(ifstream *, streamoff, streamsize);
 void inline readLoad(int, ifstream *, streamoff, streamsize);
 streamsize inline getBlockSize(int, streamoff, streamsize);
 
+
 int multi_thread()
 {
 
 	ios::sync_with_stdio(false);
 	wordMaps = new HashMap[threadCount];
-	char filename[] = "runlog0.log";
+	const char* filename = "runlog0.log";
+
 	// 双缓冲
+	// 要多开一点空间, 因为后面检查截断的时候需要空间存放
 	streamsize maxsize = loadsize + 256;
 	loadedFile[0] = new char[maxsize];
 	loadedFile[1] = new char[maxsize];
@@ -82,6 +86,7 @@ int multi_thread()
 	// 读取文件
 	ifstream file;
 	file.open(filename, ios::binary | ios::in);
+
 	if (!file)
 	{
 		cout << "Error: file \"" << filename << "\" do not exist!" << endl;
@@ -90,14 +95,10 @@ int multi_thread()
 	else
 	{
 		/* 确认文件大小 bytes */
-		/*
-		 * 这三个都是整形, streampos 当前流的位置、streamoff 流的偏移、streamsize 流的大小
-		 * seekg seekp分别表示读指针和写指针的位置, seek get、seek put
-		 */
 		streamoff start = 0;
 		streamoff size; // 文件大小
-		file.seekg(0, ios::end); // seek get 对输入流操作, seekg(0,ios::end)设置streampos到文件末尾
-		streamoff len = file.tellg(); // tellg: 返回当前 streampos, 常用来计算长度
+		file.seekg(0, ios::end);
+		streamoff len = file.tellg();
 
 		/* 通过前3个字符兼容带 bom 的 utf8 编码格式 */
 		if (len > 3)
@@ -133,7 +134,6 @@ int multi_thread()
 			part = realsize / threadCount;
 
 			/* 读入 realsize 大小的文件数据到缓存 loadedFile[step] 中 */
-			// TODO 按行读入数据到缓存
 			readLoad(step, &file, start, realsize);
 
 			start += realsize;
@@ -160,11 +160,8 @@ int multi_thread()
 				index += len;
 			}
 
-			// cout << "\npart: " << part << "\tindex :" << index << "\trealsize: " << realsize << "\trealsize - index: " << realsize - index << endl;
-			// 留一个线程来读取多于 realsize - (part * (threadCound - 1)) 的数据
-			// 为了防止单词被截断, 指针会出现偏移,所以用一个线程读取指针偏移后到末尾的数据
 			threads[0] = thread(readBlock, step, 0, index, realsize - index);
-			step = !step; // IO分离, 切换 Buffer 装数据
+			step = !step; // 切换 Buffer 装数据
 		}
 
 		// 清理
@@ -205,13 +202,12 @@ int multi_thread()
 	return 0;
 }
 
+
 // 文件获取临界不截断的真正大小
-// 从最大加载大小的位置, 往后读一个字符，遇到文件末尾返回空
 streamsize inline getRealSize(ifstream *file, streamoff start, streamsize size)
 {
 	file->seekg(start + size);
-	// get() 从流中读入一个字符, 如果到文件末尾, 则返回空字符,
-	// 如果从指针位置往后有需要留下的字符，则加上
+	// XXX while (file->get() != '\n')
 	while (words[file->get()])
 	{
 		++size;
@@ -219,10 +215,12 @@ streamsize inline getRealSize(ifstream *file, streamoff start, streamsize size)
 	return size;
 }
 
-// 单词截断检查,往后多读一点, 避免把一个单词拆开
+
+// 截断检查,往后多读一点, 避免把一行数据被拆开
 streamsize inline getBlockSize(int step, streamoff start, streamsize size)
 {
 	char *p = loadedFile[step] + start + size;
+	// XXX while (*p != '\n')
 	while (words[int(*p)])
 	{
 		++size;
@@ -231,8 +229,8 @@ streamsize inline getBlockSize(int step, streamoff start, streamsize size)
 	return size;
 }
 
+
 // 文件读入到堆
-// void inline readLoad(int step, ifstream *file, streamoff start, streamsize size)
 void inline readLoad(int step, ifstream *file, streamoff start, streamsize size)
 {
 	file->seekg(start);
@@ -240,7 +238,6 @@ void inline readLoad(int step, ifstream *file, streamoff start, streamsize size)
 }
 
 
-// 分块读取
 void readBlock(int step, int id, streamoff start, streamsize size)
 {
 	char c = '\0';
@@ -249,6 +246,9 @@ void readBlock(int step, int id, streamoff start, streamsize size)
 	HashMap *map = wordMaps + id;
 	KeySet curr, end = map->end();
 	char *filebuffer = loadedFile[step];
+	cout << loadedFile[step] << endl;
+	cout << endl << endl << endl;
+	cout << *filebuffer << endl;
 	streamsize bfSize = start + size;
 	for (streamoff index = start; index != bfSize; ++index)
 	{
@@ -274,6 +274,7 @@ void readBlock(int step, int id, streamoff start, streamsize size)
 			i = 0;
 		}
 	}
+
 	if (i > 0)
 	{
 		word[i++] = '\0';
