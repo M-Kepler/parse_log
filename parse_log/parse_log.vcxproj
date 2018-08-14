@@ -119,6 +119,7 @@
     <ClCompile Include="inifile.cpp" />
     <ClCompile Include="multi_thread.cpp" />
     <ClCompile Include="parse_log.cpp" />
+    <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="runlog_config.ini" />
@@ -126,6 +127,7 @@
   <ItemGroup>
     <ClInclude Include="inifile.h" />
     <ClInclude Include="multi_thread.h" />
+    <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="runlog0-3.1.log" />
