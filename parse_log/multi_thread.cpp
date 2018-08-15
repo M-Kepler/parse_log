@@ -38,11 +38,13 @@ bool words[128]; // ascii表
 int threadCount = 4;
 
 // streamsize loadsize = 536870912;    // 1024*1024*1024  1879048192 1610612736 1073741824 536870912 268435456
-streamsize loadsize = 700; // 一次加载的文件大小（比特）
+streamsize loadsize = 1400; // 一次加载的文件大小（比特）
 char *loadedFile[2]; // 存放指向 char* 类型的指针的数组
 HashMap *wordMaps;
 
 // 声明
+
+vector<string> ReadLineToVec(int step, int id, streamoff start, streamsize size);
 void readBlock(int, int, streamoff, streamsize);
 streamsize inline getRealSize(ifstream *, streamoff, streamsize);
 void inline readLoad(int, ifstream *, streamoff, streamsize);
@@ -54,7 +56,7 @@ int multi_thread()
 
 	ios::sync_with_stdio(false);
 	wordMaps = new HashMap[threadCount];
-	const char* filename = "runlog0.log";
+	const char* filename = "runlog0-3.1.log";
 
 	// 双缓冲
 	// 要多开一点空间, 因为后面检查截断的时候需要空间存放
@@ -156,6 +158,8 @@ int multi_thread()
 			for (int i = 1; i < threadCount; ++i)
 			{
 				len = getBlockSize(step, index, part);
+				// 传入vector处理
+				cout << "step: " << step << "\tindex: " << index << "\tlen: " << len << "\tpart: " << part << endl;
 				threads[i] = thread(readBlock, step, i, index, len);
 				index += len;
 			}
@@ -207,8 +211,9 @@ int multi_thread()
 streamsize inline getRealSize(ifstream *file, streamoff start, streamsize size)
 {
 	file->seekg(start + size);
-	// XXX while (file->get() != '\n')
-	while (words[file->get()])
+	// TODO
+	// 从配置文件获取
+	while (file->get() != '\n')
 	{
 		++size;
 	}
@@ -220,8 +225,7 @@ streamsize inline getRealSize(ifstream *file, streamoff start, streamsize size)
 streamsize inline getBlockSize(int step, streamoff start, streamsize size)
 {
 	char *p = loadedFile[step] + start + size;
-	// XXX while (*p != '\n')
-	while (words[int(*p)])
+	while (*p != '\n')
 	{
 		++size;
 		++p;
@@ -235,6 +239,41 @@ void inline readLoad(int step, ifstream *file, streamoff start, streamsize size)
 {
 	file->seekg(start);
 	file->read(loadedFile[step], size);
+}
+
+
+// 从 FileBuffer 中一行行装入 vStringLine
+vector<string> ReadLineToVec(int step, int id, streamoff start, streamsize size)
+{
+	char *pFileBuffer;
+	char *pLineBuffer;
+	streamsize llBuffSize;
+	string sLineBuffer; // char *lineBuffer = NULL;
+	string sFileBuffer;
+	string sLine;
+	vector<string> vStringLine;
+
+	pFileBuffer = loadedFile[step];
+	sFileBuffer = pFileBuffer;
+	llBuffSize  = start + size;
+	sLineBuffer = sFileBuffer.substr(start, llBuffSize);
+	pLineBuffer = (char*)sLineBuffer.data();
+	vStringLine.clear();
+
+	// FIXME 行分割符\r\n \n
+	// windows系统和unix系统的分割符不一样
+	char *strDelim = (char*)"\n";
+	char *strToken = NULL;
+	char *nextToken = NULL;
+
+	strToken = strtok_s(pLineBuffer, strDelim, &nextToken);
+	while (strToken != NULL)
+	{
+		sLine.assign(strToken);
+		vStringLine.push_back(sLine);
+		strToken = strtok_s(NULL, strDelim, &nextToken);
+	}
+	return vStringLine;
 }
 
 
@@ -290,3 +329,4 @@ void readBlock(int step, int id, streamoff start, streamsize size)
 		}
 	}
 }
+
