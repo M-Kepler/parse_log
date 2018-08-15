@@ -1,14 +1,8 @@
-#include <iostream>
-#include <fstream>
-#include <istream>
-#include <unordered_map>
-#include <time.h>
-#include <thread>
-#include <string>
-#include <cstring>
-using namespace std;
 
-struct CharCmp
+#include "multi_thread.h"
+
+
+struct StrCmp
 {
 	bool operator()(const char *str1, const char *str2) const
 	{
@@ -16,7 +10,7 @@ struct CharCmp
 	}
 };
 
-struct WordHash
+struct MsgIdHash
 {
 	// BKDR hash algorithm
 	int operator()(char *str) const
@@ -31,24 +25,15 @@ struct WordHash
 	}
 };
 
-typedef unordered_map<char *, unsigned int, WordHash, CharCmp> HashMap;
-typedef unordered_map<char *, unsigned int, WordHash, CharCmp>::iterator KeySet;
+typedef unordered_map<char *, unsigned int, MsgIdHash, StrCmp> HashMap;
+typedef unordered_map<char *, unsigned int, MsgIdHash, StrCmp>::iterator KeySet;
 
 bool words[128]; // ascii表
 int threadCount = 4;
 
-// streamsize loadsize = 536870912;    // 1024*1024*1024  1879048192 1610612736 1073741824 536870912 268435456
-streamsize loadsize = 1400; // 一次加载的文件大小（比特）
+streamsize loadsize = 1400; // bit
 char *loadedFile[2]; // 存放指向 char* 类型的指针的数组
 HashMap *wordMaps;
-
-// 声明
-
-vector<string> ReadLineToVec(int step, int id, streamoff start, streamsize size);
-void readBlock(int, int, streamoff, streamsize);
-streamsize inline getRealSize(ifstream *, streamoff, streamsize);
-void inline readLoad(int, ifstream *, streamoff, streamsize);
-streamsize inline getBlockSize(int, streamoff, streamsize);
 
 
 int multi_thread()
@@ -59,7 +44,6 @@ int multi_thread()
 	const char* filename = "runlog0-3.1.log";
 
 	// 双缓冲
-	// 要多开一点空间, 因为后面检查截断的时候需要空间存放
 	streamsize maxsize = loadsize + 256;
 	loadedFile[0] = new char[maxsize];
 	loadedFile[1] = new char[maxsize];
@@ -67,7 +51,6 @@ int multi_thread()
 	time_t t_start, t_end;
 	t_start = time(NULL);
 
-	/* 初始化可识别字符, 给127个ascii字符维护一个bool值, 把需要的ascii码的bool设置为true */
 	memset(words, false, 128);
 	// ascii中97是a, 122是z
 	for (char c = 97; c != 123; ++c)
@@ -91,7 +74,7 @@ int multi_thread()
 
 	if (!file)
 	{
-		cout << "Error: file \"" << filename << "\" do not exist!" << endl;
+		cout << "Error: File \"" << filename << "\" do not exist!" << endl;
 		exit(1);
 	}
 	else
@@ -102,7 +85,7 @@ int multi_thread()
 		file.seekg(0, ios::end);
 		streamoff len = file.tellg();
 
-		/* 通过前3个字符兼容带 bom 的 utf8 编码格式 */
+		/* 兼容带 bom 的 utf8 编码格式 */
 		if (len > 3)
 		{
 			char bom[3];
@@ -126,7 +109,7 @@ int multi_thread()
 		thread *threads = new thread[threadCount];
 		streamoff index, part;
 		streamsize realsize; // 实际读入大小(因为可能遇到需要的单词被截位)
-		bool step = 0; // 缓存编号
+		bool step = 0; // 缓存下标
 		bool needWait = false;
 
 		while (size)
@@ -207,7 +190,6 @@ int multi_thread()
 }
 
 
-// 文件获取临界不截断的真正大小
 streamsize inline getRealSize(ifstream *file, streamoff start, streamsize size)
 {
 	file->seekg(start + size);
@@ -221,7 +203,6 @@ streamsize inline getRealSize(ifstream *file, streamoff start, streamsize size)
 }
 
 
-// 截断检查,往后多读一点, 避免把一行数据被拆开
 streamsize inline getBlockSize(int step, streamoff start, streamsize size)
 {
 	char *p = loadedFile[step] + start + size;
@@ -234,7 +215,6 @@ streamsize inline getBlockSize(int step, streamoff start, streamsize size)
 }
 
 
-// 文件读入到堆
 void inline readLoad(int step, ifstream *file, streamoff start, streamsize size)
 {
 	file->seekg(start);
@@ -242,7 +222,6 @@ void inline readLoad(int step, ifstream *file, streamoff start, streamsize size)
 }
 
 
-// 从 FileBuffer 中一行行装入 vStringLine
 vector<string> ReadLineToVec(int step, int id, streamoff start, streamsize size)
 {
 	char *pFileBuffer;
@@ -255,7 +234,7 @@ vector<string> ReadLineToVec(int step, int id, streamoff start, streamsize size)
 
 	pFileBuffer = loadedFile[step];
 	sFileBuffer = pFileBuffer;
-	llBuffSize  = start + size;
+	llBuffSize = start + size + 1; // 不+1会丢失最后一个字符
 	sLineBuffer = sFileBuffer.substr(start, llBuffSize);
 	pLineBuffer = (char*)sLineBuffer.data();
 	vStringLine.clear();

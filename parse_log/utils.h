@@ -5,14 +5,14 @@
 #include <iostream>
 #include <string>
 #include <fstream>
-
 using namespace std;
 
+
 /*
-* @brief       1
-* @param[in]   2
-* @return      3
-*/
+ * @brief       1
+ * @param[in]   2
+ * @return      3
+ */
 
 
 /*
