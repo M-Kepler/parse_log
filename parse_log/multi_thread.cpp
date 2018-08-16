@@ -1,37 +1,11 @@
 
 #include "multi_thread.h"
-
-
-struct StrCmp
-{
-	bool operator()(const char *str1, const char *str2) const
-	{
-		return strcmp(str1, str2) == 0;
-	}
-};
-
-struct MsgIdHash
-{
-	// BKDR hash algorithm
-	int operator()(char *str) const
-	{
-		int seed = 131; // 31 131 1313 131313 etc..
-		int hash = 0;
-		while (*str)
-		{
-			hash = hash * seed + (*str++);
-		}
-		return hash & (0x7FFFFFFF);
-	}
-};
-
-typedef unordered_map<char *, unsigned int, MsgIdHash, StrCmp> HashMap;
-typedef unordered_map<char *, unsigned int, MsgIdHash, StrCmp>::iterator KeySet;
+#include "utils.h"
 
 bool words[128]; // ascii表
 int threadCount = 4;
 
-streamsize loadsize = 1400; // bit
+streamsize loadsize = 8000; // XXX 调整 
 char *loadedFile[2]; // 存放指向 char* 类型的指针的数组
 HashMap *wordMaps;
 
@@ -105,6 +79,7 @@ int multi_thread()
 		{
 			size = len;
 		}
+		cout << "文件大小" << size  << endl; // 123789
 
 		thread *threads = new thread[threadCount];
 		streamoff index, part;
@@ -121,8 +96,7 @@ int multi_thread()
 			/* 读入 realsize 大小的文件数据到缓存 loadedFile[step] 中 */
 			readLoad(step, &file, start, realsize);
 
-			start += realsize;
-			size -= realsize;
+
 
 			/* 阻塞主线程,等待上一个数据块分析结束,再对下一数据块进行分析*/
 			if (needWait)
@@ -142,12 +116,21 @@ int multi_thread()
 			{
 				len = getBlockSize(step, index, part);
 				// 传入vector处理
-				cout << "step: " << step << "\tindex: " << index << "\tlen: " << len << "\tpart: " << part << endl;
-				threads[i] = thread(readBlock, step, i, index, len);
+				vector<string>sevc = ReadLineToVec(step, start, len, i);
+				cout << "共读入: " << sevc.size() << "行" << endl;
+				// XXX 获取分块大小(测试)
+				// cout << "step: " << step << "\tindex: " << index << "\tlen: " << len << "\tpart: " << part << endl;
+				// threads[i] = thread(readBlock, step, i, index, len);
+				threads[i] = thread(ParseMsgLine, sevc, "MsgId" );
 				index += len;
 			}
+			// threads[0] = thread(readBlock, step, 0, index, realsize - index);
+			vector<string>sevc0 = ReadLineToVec(step, index, realsize - index);
+			threads[0] = thread(ParseMsgLine, sevc0, "MsgId");
 
-			threads[0] = thread(readBlock, step, 0, index, realsize - index);
+			start += realsize;
+			size -= realsize;
+
 			step = !step; // 切换 Buffer 装数据
 		}
 
@@ -160,7 +143,10 @@ int multi_thread()
 		delete loadedFile[1];
 		file.close();
 
-	    // 结算累加
+
+
+		// 结算累加
+		/*
 		HashMap *map = wordMaps;
 		for (int i = 1; i < threadCount; ++i)
 		{
@@ -182,6 +168,7 @@ int multi_thread()
 		{
 			cout << i->first << "\t= " << i->second << endl;
 		}
+		*/
 	}
 	t_end = time(NULL);
 
@@ -222,12 +209,13 @@ void inline readLoad(int step, ifstream *file, streamoff start, streamsize size)
 }
 
 
-vector<string> ReadLineToVec(int step, int id, streamoff start, streamsize size)
+vector<string> ReadLineToVec(int step, streamoff start, streamsize size, int id)
 {
 	char *pFileBuffer;
 	char *pLineBuffer;
 	streamsize llBuffSize;
-	string sLineBuffer; // char *lineBuffer = NULL;
+	string sLineBuffer;
+	// char *lineBuffer = NULL;
 	string sFileBuffer;
 	string sLine;
 	vector<string> vStringLine;
@@ -239,8 +227,8 @@ vector<string> ReadLineToVec(int step, int id, streamoff start, streamsize size)
 	pLineBuffer = (char*)sLineBuffer.data();
 	vStringLine.clear();
 
-	// FIXME 行分割符\r\n \n
-	// windows系统和unix系统的分割符不一样
+	// FIXME
+	// 行分割符\r\n \n ; windows系统和unix系统的分割符不一样; 期望通过配置文件或自动知道, 也可以统一用\n为分隔符, 处理的时候兼容\r 
 	char *strDelim = (char*)"\n";
 	char *strToken = NULL;
 	char *nextToken = NULL;
@@ -256,6 +244,33 @@ vector<string> ReadLineToVec(int step, int id, streamoff start, streamsize size)
 }
 
 
+void ParseMsgLine(vector<string> sevc, string KeyStr)
+{
+	string MsgId;
+	unordered_multimap<string, string> mymap;
+	unordered_multimap<string, string>::iterator curr;
+
+	auto end = mymap.end();
+	for (string::size_type i = 0; i < sevc.size(); ++i)
+	{
+		MsgId = GetMsgValue(sevc[i], KeyStr);
+		mymap.insert(pair<string, string>(MsgId, sevc[i]));
+	}
+	auto begin = mymap.begin();
+
+	// debug
+	//  遍历所有map, 对桶元素数量小于2的，认为确实req或ans
+	for (; begin != mymap.end(); begin++)
+	{
+		if (mymap.count(begin->first) < 2)
+		{
+			cout << "\n缺失应答串的MsgId： \t" << GetMsgValue(begin->second, "MsgId") << endl << endl;
+			cout << endl << begin->second << endl << endl;
+		}
+	}
+}
+
+
 void readBlock(int step, int id, streamoff start, streamsize size)
 {
 	char c = '\0';
@@ -264,12 +279,10 @@ void readBlock(int step, int id, streamoff start, streamsize size)
 	HashMap *map = wordMaps + id;
 	KeySet curr, end = map->end();
 	char *filebuffer = loadedFile[step];
-	cout << loadedFile[step] << endl;
-	cout << endl << endl << endl;
-	cout << *filebuffer << endl;
 	streamsize bfSize = start + size;
 	for (streamoff index = start; index != bfSize; ++index)
 	{
+		// FIXME 这里总会出现越界
 		c = filebuffer[index];
 		if (c > 0 && words[int(c)])
 		{

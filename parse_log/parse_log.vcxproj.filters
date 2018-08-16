@@ -45,5 +45,6 @@
   <ItemGroup>
     <Text Include="runlog0.log" />
     <Text Include="runlog0-3.1.log" />
+    <Text Include="runlog-test.log" />
   </ItemGroup>
 </Project>

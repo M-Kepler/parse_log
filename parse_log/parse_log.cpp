@@ -1,21 +1,21 @@
 /*
 map结构:
 {
-    "msgid": {
-        "req": {
-            "req_msgid": {
-                "LBM": "",
-                "str_req_time": "",
-                "ll_req_time": "",
-                "msg_detail": ""
-            }
-        },
-        "ans": {
-            "ans_msgid": {
-                "ll_ans_time": ""
-            }
-        }
-    }
+	"msgid": {
+		"req": {
+			"req_msgid": {
+				"LBM": "",
+				"str_req_time": "",
+				"ll_req_time": "",
+				"msg_detail": ""
+			}
+		},
+		"ans": {
+			"ans_msgid": {
+				"ll_ans_time": ""
+			}
+		}
+	}
 }
 
 * 先做3.1的日志格式
@@ -32,7 +32,7 @@ using namespace inifile;
 
 string Section = "CONFIG";
 const char* filepath = "runlog_config.ini";
-const char* filename = "runlog0-3.1.log";
+const char* filename = "runlog-test.log";
 
 int main(int argv, char* argc)
 {
@@ -57,7 +57,6 @@ int main(int argv, char* argc)
 	/*
 	IniFile ini;
 	ini.load(filepath);
-
 	string Key_ScanTime = "ScanTime";
 	string Value_ScanTime;
 	ini.getValue(Section, Key_ScanTime, Value_ScanTime);
@@ -89,7 +88,7 @@ int main(int argv, char* argc)
 	}
 	*/
 
-	
+
 	/* 按行读入vector */
 	/*
 	ifstream in(filename, ios::in | ios::binary | ios::ate);
@@ -109,6 +108,7 @@ int main(int argv, char* argc)
 
 
 	/* 分块读vec */
+	/*
 	file.seekg(0, ios::end);
 	streamoff len = file.tellg();
 
@@ -116,9 +116,9 @@ int main(int argv, char* argc)
 	file.read(loadedFile[step], len);
 
 	char *filebuffer = loadedFile[step]; // 缓冲块首地址
-	
+
 	string sfilebuffer = filebuffer;
-	string sLineBuffer = sfilebuffer.substr(0, 397 + 1);
+	string sLineBuffer = sfilebuffer.substr(0, 2427 + 1); // XXX 测试的时候,这个分块要从multi_thread中获取到的
 	char *pLineBuffer = (char*)sLineBuffer.data();
 
 	char *strDelim = (char*)"\r\n"; // 缓冲块中的分隔符
@@ -140,19 +140,38 @@ int main(int argv, char* argc)
 	delete loadedFile[1];
 	for (string::size_type i = 0; i < sevc.size(); ++i)
 	{
-		cout << sevc[i] << endl;
+		// cout << sevc[i] << endl;
 	};
+	*/
 
 
+	// TODO 20180816
+	/* 日志行到 unordered_map */
+	/*
+	unordered_multimap<string, string> mymap;
+	map<string, string>::iterator curr;
 
-	/* 日志行到map */
-	for (string::size_type i = 0; i < sevc.size(); i++)
+	auto end = mymap.end();
+	for (string::size_type i = 0; i < sevc.size(); ++i)
 	{
-
+		string MsgId = GetMsgValue(sevc[i], "MsgId");
+		mymap.insert(pair<string, string>(MsgId, sevc[i]));
 	}
 
+	//  遍历所有map, 对桶元素数量小于2的，认为缺失req或ans
+	cout << "共读入: " << sevc.size() << "行" << endl;
+	auto begin = mymap.begin();
+	for (; begin != mymap.end(); begin++)
+	{
+		if (mymap.count(begin->first) < 2)
+		{
+			cout << "\n缺失应答串的MsgId： \t" << GetMsgValue(begin->second, "MsgId") << endl << endl;
+			cout << endl << begin->second << endl << endl;
+		}
+	}
+	*/
 
-	// multi_thread();
+	multi_thread();
 
 	system("pause");
 	return 0;

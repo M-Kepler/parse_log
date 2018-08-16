@@ -131,6 +131,7 @@
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="runlog-test.log" />
     <Text Include="runlog0-3.1.log" />
     <Text Include="runlog0.log" />
   </ItemGroup>

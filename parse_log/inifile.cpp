@@ -1,4 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
+// add by hjj
+// ±ÜÃâisspaceµÄ±¨´í
 
 #ifndef _INIFILE_CPP
 #define _INIFILE_CPP
@@ -551,7 +553,10 @@ namespace inifile
 
 		int i = 0;
 
-		// original: while (isspace(str[i]) && str[i] != '\0') {
+		/*
+		 * mdf by hjj
+		 * original: while (isspace(str[i]) && str[i] != '\0') {
+		 */
 		while (isspace((unsigned char)str[i]) && str[i] != '\0') {
 			i++;
 		}
@@ -564,7 +569,10 @@ namespace inifile
 		len = str.length();
 
 		for (i = len - 1; i >= 0; --i) {
-			// original: if (!isspace(str[i])) {
+			/*
+			 mdf by hjj
+			 original: if (!isspace(str[i])) {
+			 */
 			if (!isspace((unsigned char)str[i])) {
 				break;
 			}
