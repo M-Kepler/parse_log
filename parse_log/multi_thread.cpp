@@ -10,11 +10,14 @@ char *loadedFile[2]; // 存放指向 char* 类型的指针的数组
 HashMap *wordMaps;
 
 
+unordered_multimap<string, string> mymap;
+unordered_multimap<string, string>::iterator curr;
+
 int multi_thread()
 {
 
 	ios::sync_with_stdio(false);
-	wordMaps = new HashMap[threadCount];
+	// wordMaps = new HashMap[threadCount];
 	const char* filename = "runlog0-3.1.log";
 
 	// 双缓冲
@@ -25,6 +28,7 @@ int multi_thread()
 	time_t t_start, t_end;
 	t_start = time(NULL);
 
+	/*
 	memset(words, false, 128);
 	// ascii中97是a, 122是z
 	for (char c = 97; c != 123; ++c)
@@ -41,6 +45,7 @@ int multi_thread()
 	{
 		words[int(c)] = true;
 	}
+	*/
 
 	// 读取文件
 	ifstream file;
@@ -93,9 +98,14 @@ int multi_thread()
 			index = 0;
 			part = realsize / threadCount;
 
+			cout << "读入数据到Buffer[step]: " << step << endl;
+			cout << "计划一次读入大小loadedsize: " << loadsize << "\t实际一次读入大小realsize: " << realsize << endl;
+			cout << "读入开始位置:start: " << start << "\t总文件剩余读取大小: size: " << size << endl;
+
 			/* 读入 realsize 大小的文件数据到缓存 loadedFile[step] 中 */
 			readLoad(step, &file, start, realsize);
-
+			start += realsize;
+			size -= realsize;
 
 
 			/* 阻塞主线程,等待上一个数据块分析结束,再对下一数据块进行分析*/
@@ -111,39 +121,36 @@ int multi_thread()
 				needWait = true;
 			}
 
-			// 多线程处理到map中
 			for (int i = 1; i < threadCount; ++i)
 			{
 				len = getBlockSize(step, index, part);
-				// 传入vector处理
-				vector<string>sevc = ReadLineToVec(step, start, len, i);
-				cout << "共读入: " << sevc.size() << "行" << endl;
-				// XXX 获取分块大小(测试)
-				// cout << "step: " << step << "\tindex: " << index << "\tlen: " << len << "\tpart: " << part << endl;
-				// threads[i] = thread(readBlock, step, i, index, len);
-				threads[i] = thread(ParseMsgLine, sevc, "MsgId" );
+				cout << "\n计划每个线程读入大小part: " << part << "\t线程开始读入位置index: " << index << "\t实际每个线程读入大小len:" << len << endl;
+				vector<string>sevc = ReadLineToVec(step, index, len, i);
+				cout << "线程: " << i << " 共读入: " << sevc.size() << "行" << endl;
+				threads[i] = thread(ParseMsgLine, sevc, "MsgId");
 				index += len;
 			}
-			// threads[0] = thread(readBlock, step, 0, index, realsize - index);
+
 			vector<string>sevc0 = ReadLineToVec(step, index, realsize - index);
 			threads[0] = thread(ParseMsgLine, sevc0, "MsgId");
-
-			start += realsize;
-			size -= realsize;
+			cout << "线程: 4 " << " 共读入: " << sevc0.size() << "行" << endl ;
 
 			step = !step; // 切换 Buffer 装数据
+			cout << "文件剩余大小: size: " << size << endl << endl << endl << endl;
 		}
 
-		// 清理
+		cout << "SIZE: " << size << endl;
+		cout << "清理" << endl;
+		/*
 		for (int i = 0; i < threadCount; ++i)
 		{
 			threads[i].join();
 		}
+		*/
 		delete loadedFile[0];
+		// FIXME 释放的时候有问题
 		delete loadedFile[1];
 		file.close();
-
-
 
 		// 结算累加
 		/*
@@ -211,8 +218,8 @@ void inline readLoad(int step, ifstream *file, streamoff start, streamsize size)
 
 vector<string> ReadLineToVec(int step, streamoff start, streamsize size, int id)
 {
-	char *pFileBuffer;
-	char *pLineBuffer;
+	char *pFileBuffer = NULL;
+	char *pLineBuffer = NULL;
 	streamsize llBuffSize;
 	string sLineBuffer;
 	// char *lineBuffer = NULL;
@@ -247,8 +254,6 @@ vector<string> ReadLineToVec(int step, streamoff start, streamsize size, int id)
 void ParseMsgLine(vector<string> sevc, string KeyStr)
 {
 	string MsgId;
-	unordered_multimap<string, string> mymap;
-	unordered_multimap<string, string>::iterator curr;
 
 	auto end = mymap.end();
 	for (string::size_type i = 0; i < sevc.size(); ++i)
@@ -256,10 +261,10 @@ void ParseMsgLine(vector<string> sevc, string KeyStr)
 		MsgId = GetMsgValue(sevc[i], KeyStr);
 		mymap.insert(pair<string, string>(MsgId, sevc[i]));
 	}
-	auto begin = mymap.begin();
 
-	// debug
-	//  遍历所有map, 对桶元素数量小于2的，认为确实req或ans
+	// TODO 后面再遍历所有map, 对桶元素数量小于2的，认为确实req或ans
+	/*
+	auto begin = mymap.begin();
 	for (; begin != mymap.end(); begin++)
 	{
 		if (mymap.count(begin->first) < 2)
@@ -268,6 +273,7 @@ void ParseMsgLine(vector<string> sevc, string KeyStr)
 			cout << endl << begin->second << endl << endl;
 		}
 	}
+	*/
 }
 
 

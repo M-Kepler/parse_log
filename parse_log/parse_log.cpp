@@ -30,17 +30,18 @@ using namespace std;
 using namespace inifile;
 
 
+char *loadedFile2[2];
 string Section = "CONFIG";
 const char* filepath = "runlog_config.ini";
 const char* filename = "runlog-test.log";
+
 
 int main(int argv, char* argc)
 {
 	bool step = 0;
 	streamsize loadsize = 250000;
-	char *loadedFile[2];
-	loadedFile[0] = new char[loadsize];
-	loadedFile[1] = new char[loadsize];
+	loadedFile2[0] = new char[loadsize];
+	loadedFile2[1] = new char[loadsize];
 
 	// 读取文件
 	ifstream file;
@@ -113,9 +114,9 @@ int main(int argv, char* argc)
 	streamoff len = file.tellg();
 
 	file.seekg(0);
-	file.read(loadedFile[step], len);
+	file.read(loadedFile2[step], len);
 
-	char *filebuffer = loadedFile[step]; // 缓冲块首地址
+	char *filebuffer = loadedFile2[step]; // 缓冲块首地址
 
 	string sfilebuffer = filebuffer;
 	string sLineBuffer = sfilebuffer.substr(0, 2427 + 1); // XXX 测试的时候,这个分块要从multi_thread中获取到的
@@ -136,8 +137,6 @@ int main(int argv, char* argc)
 		sevc.push_back(s);
 		strToken = strtok_s(NULL, strDelim, &nextToken); // 若第一个参数为空值NULL，则函数保存的指针SAVE_PTR在下一次调用中将作为起始位
 	}
-	delete loadedFile[0];
-	delete loadedFile[1];
 	for (string::size_type i = 0; i < sevc.size(); ++i)
 	{
 		// cout << sevc[i] << endl;
@@ -173,6 +172,8 @@ int main(int argv, char* argc)
 
 	multi_thread();
 
+	delete loadedFile2[0];
+	delete loadedFile2[1];
 	system("pause");
 	return 0;
 }
