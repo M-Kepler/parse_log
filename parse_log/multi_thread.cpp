@@ -12,16 +12,18 @@ HashMap *wordMaps;
 
 unordered_multimap<string, string> mymap;
 unordered_multimap<string, string>::iterator curr;
+vector<string> sevc;
+vector<string> sevc0;
+// vector<string> vStringLine;
 
 int multi_thread()
 {
-
+	const char* filename = "runlog0-3.1.log";
 	ios::sync_with_stdio(false);
 	// wordMaps = new HashMap[threadCount];
-	const char* filename = "runlog0-3.1.log";
 
 	// 双缓冲
-	streamsize maxsize = loadsize + 256;
+	streamsize maxsize = loadsize + 512; // XXX 导致 delete loadedFile[1] 出错的问题在这里,这个512是为了防止阶段所以多设置出来的一段空间
 	loadedFile[0] = new char[maxsize];
 	loadedFile[1] = new char[maxsize];
 
@@ -98,9 +100,10 @@ int multi_thread()
 			index = 0;
 			part = realsize / threadCount;
 
-			cout << "读入数据到Buffer[step]: " << step << endl;
+			cout << "\n\n\n读入数据到loadedFile[step]: " << step << endl;
 			cout << "计划一次读入大小loadedsize: " << loadsize << "\t实际一次读入大小realsize: " << realsize << endl;
-			cout << "读入开始位置:start: " << start << "\t总文件剩余读取大小: size: " << size << endl;
+			cout << "读入开始位置:start: " << start << "\t总文件剩余读取大小: size: " << size << "\t\t计划每个线程读入大小part: " << part << endl << endl << endl;
+
 
 			/* 读入 realsize 大小的文件数据到缓存 loadedFile[step] 中 */
 			readLoad(step, &file, start, realsize);
@@ -123,59 +126,45 @@ int multi_thread()
 
 			for (int i = 1; i < threadCount; ++i)
 			{
+				if (index != 0)
+				{
+					index += 1; // 下一个线程读取的开始位置跳过\n字符
+				}
+
 				len = getBlockSize(step, index, part);
-				cout << "\n计划每个线程读入大小part: " << part << "\t线程开始读入位置index: " << index << "\t实际每个线程读入大小len:" << len << endl;
-				vector<string>sevc = ReadLineToVec(step, index, len, i);
-				cout << "线程: " << i << " 共读入: " << sevc.size() << "行" << endl;
-				threads[i] = thread(ParseMsgLine, sevc, "MsgId");
-				index += len;
+				// TODO
+				// 如果只有两行, 不够分呢? 还需要判断一下线程已处理的字符和这一块数据的大小
+				if (len + index < realsize)
+				{
+					cout << "线程 " << i << " 开始读入位置index: " << index << "\t实际线程 " << i << " 读入大小len:" << len << endl;
+					sevc = ReadLineToVec(step, index, len, i);
+					cout << "线程 " << i << " 共读入: " << sevc.size() << "行" << endl << endl << endl;
+					threads[i] = thread(ParseMsgLine, sevc, "MsgId");
+					index += len;
+				}
+				else
+				{
+					break;
+				}
 			}
 
-			vector<string>sevc0 = ReadLineToVec(step, index, realsize - index);
-			threads[0] = thread(ParseMsgLine, sevc0, "MsgId");
-			cout << "线程: 4 " << " 共读入: " << sevc0.size() << "行" << endl ;
+			cout << "线程 4 开始读入位置 index: " << index << "\t; 4 线程读入大小 real-index: " << realsize - index << endl;
+			if ((realsize - index) > 70)
+			{
+				sevc0 = ReadLineToVec(step, index, realsize - index);
+				threads[0] = thread(ParseMsgLine, sevc0, "MsgId");
+				cout << "线程: 4 " << " 共读入: " << sevc0.size() << "行" << endl;
+			}
 
 			step = !step; // 切换 Buffer 装数据
 			cout << "文件剩余大小: size: " << size << endl << endl << endl << endl;
 		}
 
-		cout << "SIZE: " << size << endl;
-		cout << "清理" << endl;
-		/*
-		for (int i = 0; i < threadCount; ++i)
-		{
-			threads[i].join();
-		}
-		*/
+		cout << "Clear" << endl;
+
 		delete loadedFile[0];
-		// FIXME 释放的时候有问题
 		delete loadedFile[1];
 		file.close();
-
-		// 结算累加
-		/*
-		HashMap *map = wordMaps;
-		for (int i = 1; i < threadCount; ++i)
-		{
-			KeySet p = (wordMaps + i)->begin(), end = (wordMaps + i)->end();
-			for (; p != end; ++p)
-				(*map)[p->first] += p->second;
-		}
-		cout << "Done.\r\n\nDifferent words: " << map->size() << endl;
-		KeySet p = map->begin();
-		KeySet end = map->end();
-		long total = 0;
-		for (; p != end; ++p)
-		{
-			total += p->second;
-		}
-		cout << "Total words:" << total << endl;
-		cout << "\nEach words count:" << endl;
-		for (KeySet i = map->begin(); i != map->end(); ++i)
-		{
-			cout << i->first << "\t= " << i->second << endl;
-		}
-		*/
 	}
 	t_end = time(NULL);
 
@@ -220,7 +209,6 @@ vector<string> ReadLineToVec(int step, streamoff start, streamsize size, int id)
 {
 	char *pFileBuffer = NULL;
 	char *pLineBuffer = NULL;
-	streamsize llBuffSize;
 	string sLineBuffer;
 	// char *lineBuffer = NULL;
 	string sFileBuffer;
@@ -228,14 +216,16 @@ vector<string> ReadLineToVec(int step, streamoff start, streamsize size, int id)
 	vector<string> vStringLine;
 
 	pFileBuffer = loadedFile[step];
+
+	// debug
 	sFileBuffer = pFileBuffer;
-	llBuffSize = start + size + 1; // 不+1会丢失最后一个字符
-	sLineBuffer = sFileBuffer.substr(start, llBuffSize);
+	sLineBuffer = sFileBuffer.substr(start, size);
 	pLineBuffer = (char*)sLineBuffer.data();
 	vStringLine.clear();
 
 	// FIXME
 	// 行分割符\r\n \n ; windows系统和unix系统的分割符不一样; 期望通过配置文件或自动知道, 也可以统一用\n为分隔符, 处理的时候兼容\r 
+	// 现在这样处理,每个vector元素末尾都有一个'\r'
 	char *strDelim = (char*)"\n";
 	char *strToken = NULL;
 	char *nextToken = NULL;
@@ -247,6 +237,9 @@ vector<string> ReadLineToVec(int step, streamoff start, streamsize size, int id)
 		vStringLine.push_back(sLine);
 		strToken = strtok_s(NULL, strDelim, &nextToken);
 	}
+	cout << vStringLine[0] << endl ;
+	cout << vStringLine.back() << endl ;
+
 	return vStringLine;
 }
 
@@ -256,10 +249,13 @@ void ParseMsgLine(vector<string> sevc, string KeyStr)
 	string MsgId;
 
 	auto end = mymap.end();
-	for (string::size_type i = 0; i < sevc.size(); ++i)
+	if (!sevc.empty())
 	{
-		MsgId = GetMsgValue(sevc[i], KeyStr);
-		mymap.insert(pair<string, string>(MsgId, sevc[i]));
+		for (string::size_type i = 0; i < sevc.size(); ++i)
+		{
+			MsgId = GetMsgValue(sevc[i], KeyStr);
+			mymap.insert(pair<string, string>(MsgId, sevc[i]));
+		}
 	}
 
 	// TODO 后面再遍历所有map, 对桶元素数量小于2的，认为确实req或ans
@@ -274,57 +270,5 @@ void ParseMsgLine(vector<string> sevc, string KeyStr)
 		}
 	}
 	*/
-}
-
-
-void readBlock(int step, int id, streamoff start, streamsize size)
-{
-	char c = '\0';
-	char word[128];
-	int i = 0;
-	HashMap *map = wordMaps + id;
-	KeySet curr, end = map->end();
-	char *filebuffer = loadedFile[step];
-	streamsize bfSize = start + size;
-	for (streamoff index = start; index != bfSize; ++index)
-	{
-		// FIXME 这里总会出现越界
-		c = filebuffer[index];
-		if (c > 0 && words[int(c)])
-		{
-			word[i++] = c;
-		}
-		else if (i > 0)
-		{
-			word[i++] = '\0';
-			// 先判断map中有没有
-			if ((curr = map->find(word)) == end)
-			{
-				char *str = new char[i];
-				memcpy(str, word, i);
-				map->insert(pair<char *, unsigned int>(str, 1));
-			}
-			else
-			{
-				++(curr->second);
-			}
-			i = 0;
-		}
-	}
-
-	if (i > 0)
-	{
-		word[i++] = '\0';
-		if ((curr = map->find(word)) == end)
-		{
-			char *str = new char[i];
-			memcpy(str, word, i);
-			map->insert(pair<char *, unsigned int>(str, 1));
-		}
-		else
-		{
-			++(curr->second);
-		}
-	}
 }
 

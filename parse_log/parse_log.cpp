@@ -66,6 +66,8 @@ int main(int argv, char* argc)
 
 
 	/* 获取msg中key的value */
+	// TODO
+	// WIN版要做修改
 	/*
 	const char* key_lbm = "LBM";
 	const char* str_split = ",";
@@ -77,7 +79,7 @@ int main(int argv, char* argc)
 	*/
 
 
-	/* 处理时间 */
+	/* 时间处理 */
 	/*
 	if (bCheckDate(str_req))
 	{
@@ -144,7 +146,6 @@ int main(int argv, char* argc)
 	*/
 
 
-	// TODO 20180816
 	/* 日志行到 unordered_map */
 	/*
 	unordered_multimap<string, string> mymap;

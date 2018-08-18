@@ -104,6 +104,4 @@ streamsize inline getBlockSize(int step, streamoff start, streamsize size);
 void ParseMsgLine(vector<string> sevc, string KeyStr = "MsgId");
 
 
-void readBlock(int, int, streamoff, streamsize);
-
 
