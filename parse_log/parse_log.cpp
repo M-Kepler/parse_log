@@ -172,6 +172,7 @@ int main(int argv, char* argc)
 	*/
 
 	multi_thread();
+	
 
 	delete loadedFile2[0];
 	delete loadedFile2[1];

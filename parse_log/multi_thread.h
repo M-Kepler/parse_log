@@ -44,18 +44,17 @@ typedef unordered_map<char *, unsigned int, MsgIdHash, StrCmp> HashMap;
 typedef unordered_map<char *, unsigned int, MsgIdHash, StrCmp>::iterator KeySet;
 
 
-int multi_thread();
+void multi_thread();
 
 
 /*
  * @brief       从 pFileBuffer 中按行装入vec
- * @param[in]   step			缓存块, loadedFile[step]
- * @param[in]   id				线程号 (XXX 未用到)
- * @param[in]   start			流开始位置
- * @param[in]   size			流大小
+ * @param[in]   iStep			缓存块, loadedFile[step]
+ * @param[in]   llStart			流开始位置
+ * @param[in]   llSize			流大小
  * @return      vector<string>	返回string类型的vec, 每个元素是一行
  */
-vector<string> ReadLineToVec(int step, streamoff start, streamsize size, int id = 0);
+vector<string> ReadLineToVec(int iStep, streamoff llStart, streamsize llSize);
 
 
 
@@ -63,45 +62,49 @@ vector<string> ReadLineToVec(int step, streamoff start, streamsize size, int id 
 /*
  * @brief		获取文件临界不截断的真正大小
  * @param[in]	file			打开的文件指针
- * @param[in]   start			流开始位置
- * @param[in]   size			流大小
+ * @param[in]   llStart			流开始位置
+ * @param[in]   llSize			流大小
  * @return      streamsize		检查后的实际流大小
  */
-streamsize inline getRealSize(ifstream *file, streamoff start, streamsize size);
+streamsize inline getRealSize(ifstream *file, streamoff llStart, streamsize llSize);
 
 
 
 
 /*
  * @brief		读入数据到Buffer
- * @param[in]   step			缓存 Buffer 的下标
+ * @param[in]   iStep			缓存 Buffer 的下标
  * @param[in]   file			打开的文件指针
- * @param[in]   start			流开始位置
- * @param[in]   size			流大小
+ * @param[in]   llStart			流开始位置
+ * @param[in]   llSize			流大小
  * @return      无				可通过file来访问读入的数据
  */
-void inline readLoad(int step, ifstream *file, streamoff start, streamsize size);
+void inline readLoad(int iStep, ifstream *file, streamoff llStart, streamsize llSize);
 
 
 
 
 /*
  * @brief		截断检查,往后多读一点, 避免把一行数据被拆开
- * @param[in]   step			缓存 Buffer 的下标
- * @param[in]   start			流偏移位置
- * @param[in]   size			流大小
+ * @param[in]   iStep			缓存 Buffer 的下标
+ * @param[in]   llStart			流偏移位置
+ * @param[in]   llSize			流大小
  * @return		streamsize		检查后的实际流大小
  */
-streamsize inline getBlockSize(int step, streamoff start, streamsize size);
+streamsize inline getBlockSize(int iStep, streamoff llStart, streamsize llSize);
 
 
 /*
 * @brief		处理vector中的日志行
-* @param[in]	sevc			缓存 Buffer 的下标
-* @param[in]	KeyStr			从串中指定用哪个的hash值作为Key
+* @param[in]	vecStr			缓存 Buffer 的下标
+* @param[in]	strKey			从串中指定用哪个的hash值作为Key
 * @return		无
 */
-void ParseMsgLine(vector<string> sevc, string KeyStr = "MsgId");
+void ParseMsgLine(vector<string> vecStr, string strKey = "MsgId");
+
+
+void TimeoutScan(unordered_multimap<string, string> mymap);
+
 
 
 

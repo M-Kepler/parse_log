@@ -2,37 +2,37 @@
 #include "utils.h"
 
 
-string GetMsgValue(string str_orig, string str_key, string str_split)
+string strGetMsgValue(string strOrig, string strKey, string strSplit)
 {
-	string str_value = "";
-	int str_orig_len;
-	int key_len;
-	size_t pos_key_begin;
-	size_t pos_key_end;
-	size_t pos_str_split;
+	string strRetValue = "";
+	int iStrOrigLen;
+	int iStrKeyLen;
+	size_t uiPosKeyBegin;
+	size_t uiPosKeyEnd;
+	size_t uiPosStrSplit;
 
-	str_orig_len = str_orig.length();
-	key_len = str_key.length();
-	pos_key_begin = str_orig.find(str_key);
+	iStrOrigLen = strOrig.length();
+	iStrKeyLen = strKey.length();
+	uiPosKeyBegin = strOrig.find(strKey);
 
-	if (pos_key_begin != string::npos)
+	if (uiPosKeyBegin != string::npos)
 	{
 		// 从key的位置开始,第一次出现 str_split 的位置
-		pos_str_split  =  str_orig.substr(pos_key_begin).find(str_split);
-		if (pos_str_split != string::npos)
+		uiPosStrSplit =  strOrig.substr(uiPosKeyBegin).find(strSplit);
+		if (uiPosStrSplit != string::npos)
 		{
-			pos_key_end = pos_key_begin + pos_str_split;
+			uiPosKeyEnd = uiPosKeyBegin + uiPosStrSplit;
 		}
 		else
 		{
-			pos_key_end = str_orig_len;
+			uiPosKeyEnd = iStrOrigLen;
 		}
-		int pos_begin = pos_key_begin + key_len + 1; // +1 跳过'='字符
-		int value_len = pos_key_end - pos_begin;
-		str_value = str_orig.substr(pos_begin, value_len);
-		return str_value;
+		int pos_begin = uiPosKeyBegin + iStrKeyLen + 1; // +1 跳过'='字符
+		int value_len = uiPosKeyEnd - pos_begin;
+		strRetValue = strOrig.substr(pos_begin, value_len);
+		return strRetValue;
 	}
-	return str_value;
+	return strRetValue;
 }
 
 

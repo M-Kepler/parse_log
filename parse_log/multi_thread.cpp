@@ -2,52 +2,32 @@
 #include "multi_thread.h"
 #include "utils.h"
 
-bool words[128]; // ascii表
-int threadCount = 4;
+const int iThreadCount = 4;
 
-streamsize loadsize = 8000; // XXX 调整 
-char *loadedFile[2]; // 存放指向 char* 类型的指针的数组
-HashMap *wordMaps;
-
+streamsize llLoadSize = 8000; // XXX 调整 
+char* loadedFile[2]; // 存放指向 char* 类型的指针的数组
 
 unordered_multimap<string, string> mymap;
-unordered_multimap<string, string>::iterator curr;
-vector<string> sevc;
-vector<string> sevc0;
-// vector<string> vStringLine;
+vector<string> vecThreadLines, vecEndThreadLines;
 
-int multi_thread()
+void multi_thread()
 {
 	const char* filename = "runlog0-3.1.log";
 	ios::sync_with_stdio(false);
-	// wordMaps = new HashMap[threadCount];
+	// XXX
+	// 实际上这个map是需要一致存在的
+	// mymap.clear();
 
 	// 双缓冲
-	streamsize maxsize = loadsize + 512; // XXX 导致 delete loadedFile[1] 出错的问题在这里,这个512是为了防止阶段所以多设置出来的一段空间
-	loadedFile[0] = new char[maxsize];
-	loadedFile[1] = new char[maxsize];
+	// XXX delete的问题
+	// 导致 delete loadedFile[1] 出错的问题在这里,这个512是为了防止阶段所以多设置出来的一段空间
+	streamsize llMaxSize = llLoadSize + 512;
+	loadedFile[0] = new char[llMaxSize];
+	loadedFile[1] = new char[llMaxSize];
 
-	time_t t_start, t_end;
-	t_start = time(NULL);
+	clock_t t_start, t_end;
+	t_start = clock();
 
-	/*
-	memset(words, false, 128);
-	// ascii中97是a, 122是z
-	for (char c = 97; c != 123; ++c)
-	{
-		words[int(c)] = true;
-	}
-	// ascii中65是A, 90是Z
-	for (char c = 65; c != 91; ++c)
-	{
-		words[int(c)] = true;
-	}
-	// ascii中48是0, 57是9
-	for (char c = 48; c != 58; ++c)
-	{
-		words[int(c)] = true;
-	}
-	*/
 
 	// 读取文件
 	ifstream file;
@@ -61,86 +41,84 @@ int multi_thread()
 	else
 	{
 		/* 确认文件大小 bytes */
-		streamoff start = 0;
-		streamoff size; // 文件大小
+		streamoff llStart = 0;
+		streamoff llFileSize; // 文件大小
 		file.seekg(0, ios::end);
-		streamoff len = file.tellg();
+		streamoff llFileLen = file.tellg();
+		streamoff llThreadIndex, llThreadPart;
+		streamsize llRealSize; // 实际读入大小(因为可能遇到需要的单词被截位)
+		bool bBufferIndex = 0; // 缓存下标
+		bool bNeedWait = false;
+		thread *threads = new thread[iThreadCount];
 
 		/* 兼容带 bom 的 utf8 编码格式 */
-		if (len > 3)
+		if (llFileLen > 3)
 		{
 			char bom[3];
 			file.seekg(0);
 			file.read(bom, 3);
 			if (bom[0] == -17 && bom[1] == -69 && bom[2] == -65)
 			{
-				start = 3;
-				size = len - 3;
+				llStart = 3;
+				llFileSize = llFileLen - 3;
 			}
 			else
 			{
-				size = len;
+				llFileSize = llFileLen;
 			}
 		}
 		else
 		{
-			size = len;
+			llFileSize = llFileLen;
 		}
-		cout << "文件大小" << size  << endl; // 123789
+		cout << "文件大小: " << llFileSize << endl; // 123789
 
-		thread *threads = new thread[threadCount];
-		streamoff index, part;
-		streamsize realsize; // 实际读入大小(因为可能遇到需要的单词被截位)
-		bool step = 0; // 缓存下标
-		bool needWait = false;
-
-		while (size)
+		while (llFileSize)
 		{
-			realsize = size > maxsize ? getRealSize(&file, start, loadsize) : size;
-			index = 0;
-			part = realsize / threadCount;
+			llRealSize = llFileSize > llMaxSize ? getRealSize(&file, llStart, llLoadSize) : llFileSize;
+			llThreadIndex = 0;
+			llThreadPart = llRealSize / iThreadCount;
 
-			cout << "\n\n\n读入数据到loadedFile[step]: " << step << endl;
-			cout << "计划一次读入大小loadedsize: " << loadsize << "\t实际一次读入大小realsize: " << realsize << endl;
-			cout << "读入开始位置:start: " << start << "\t总文件剩余读取大小: size: " << size << "\t\t计划每个线程读入大小part: " << part << endl << endl << endl;
-
+			cout << "\n\n\n读入数据到 loadedFile[bBufferIndex]: " << bBufferIndex << endl;
+			cout << "计划一次读入大小 llLoadSize: " << llLoadSize << "\t实际一次读入大小 llRealSize: " << llRealSize << endl;
+			cout << "读入开始位置:llStart: " << llStart << "\t总文件剩余读取大小: llFileSize: " << llFileSize << "\t\t计划每个线程读入大小llThreadPart: " << llThreadPart << endl << endl << endl;
 
 			/* 读入 realsize 大小的文件数据到缓存 loadedFile[step] 中 */
-			readLoad(step, &file, start, realsize);
-			start += realsize;
-			size -= realsize;
+			readLoad(bBufferIndex, &file, llStart, llRealSize);
+			llStart += llRealSize;
+			llFileSize -= llRealSize;
 
 
 			/* 阻塞主线程,等待上一个数据块分析结束,再对下一数据块进行分析*/
-			if (needWait)
+			if (bNeedWait)
 			{
-				for (int i = 0; i < threadCount; ++i)
+				for (int i = 0; i < iThreadCount; ++i)
 				{
 					threads[i].join();
 				}
 			}
 			else
 			{
-				needWait = true;
+				bNeedWait = true;
 			}
 
-			for (int i = 1; i < threadCount; ++i)
+			for (int i = 1; i < iThreadCount; ++i)
 			{
-				if (index != 0)
+				if (llThreadIndex != 0)
 				{
-					index += 1; // 下一个线程读取的开始位置跳过\n字符
+					llThreadIndex += 1; // 下一个线程读取的开始位置, 跳过\n字符
 				}
 
-				len = getBlockSize(step, index, part);
-				// TODO
+				llFileLen = getBlockSize(bBufferIndex, llThreadIndex, llThreadPart);
+				// XXX
 				// 如果只有两行, 不够分呢? 还需要判断一下线程已处理的字符和这一块数据的大小
-				if (len + index < realsize)
+				if (llFileLen + llThreadIndex < llRealSize)
 				{
-					cout << "线程 " << i << " 开始读入位置index: " << index << "\t实际线程 " << i << " 读入大小len:" << len << endl;
-					sevc = ReadLineToVec(step, index, len, i);
-					cout << "线程 " << i << " 共读入: " << sevc.size() << "行" << endl << endl << endl;
-					threads[i] = thread(ParseMsgLine, sevc, "MsgId");
-					index += len;
+					cout << "线程 " << i << " 开始读入位置llThreadIndex: " << llThreadIndex << "\t实际线程 " << i << " 读入大小llFileLen:" << llFileLen << endl;
+					vecThreadLines = ReadLineToVec(bBufferIndex, llThreadIndex, llFileLen);
+					cout << "线程 " << i << " 共读入: " << vecThreadLines.size() << "行" << endl << endl << endl;
+					threads[i] = thread(ParseMsgLine, vecThreadLines, "MsgId");
+					llThreadIndex += llFileLen;
 				}
 				else
 				{
@@ -148,84 +126,77 @@ int multi_thread()
 				}
 			}
 
-			cout << "线程 4 开始读入位置 index: " << index << "\t; 4 线程读入大小 real-index: " << realsize - index << endl;
-			if ((realsize - index) > 70)
+			cout << "线程 4 开始读入位置 llThreadIndex: " << llThreadIndex << "\t; 4 线程读入大小 llRealSize - llThreadIndex: " << llRealSize - llThreadIndex << endl;
+			if ((llRealSize - llThreadIndex) > 70)
 			{
-				sevc0 = ReadLineToVec(step, index, realsize - index);
-				threads[0] = thread(ParseMsgLine, sevc0, "MsgId");
-				cout << "线程: 4 " << " 共读入: " << sevc0.size() << "行" << endl;
+				vecEndThreadLines = ReadLineToVec(bBufferIndex, llThreadIndex, llRealSize - llThreadIndex);
+				threads[0] = thread(ParseMsgLine, vecEndThreadLines, "MsgId");
+				cout << "线程: 4 " << " 共读入: " << vecEndThreadLines.size() << "行" << endl;
 			}
 
-			step = !step; // 切换 Buffer 装数据
-			cout << "文件剩余大小: size: " << size << endl << endl << endl << endl;
+			bBufferIndex = !bBufferIndex; // 切换 Buffer 装数据
+			cout << "文件剩余大小: llFileSize: " << llFileSize << endl << endl << endl << endl;
 		}
-
-		cout << "Clear" << endl;
 
 		delete loadedFile[0];
 		delete loadedFile[1];
 		file.close();
 	}
-	t_end = time(NULL);
+	t_end = clock();
 
-	cout << "\r\nAll completed in " << difftime(t_end, t_start) << "s." << endl;
-	return 0;
+	cout << "\r\nAll completed in " << t_end - t_start << "ms." << endl;
 }
 
 
-streamsize inline getRealSize(ifstream *file, streamoff start, streamsize size)
+streamsize inline getRealSize(ifstream *file, streamoff llStart, streamsize llSize)
 {
-	file->seekg(start + size);
-	// TODO
-	// 从配置文件获取
+	file->seekg(llStart + llSize);
+	// XXX 换行符
 	while (file->get() != '\n')
 	{
-		++size;
+		++llSize;
 	}
-	return size;
+	return llSize;
 }
 
 
-streamsize inline getBlockSize(int step, streamoff start, streamsize size)
+streamsize inline getBlockSize(int iStep, streamoff llStart, streamsize llSize)
 {
-	char *p = loadedFile[step] + start + size;
+	char *p = loadedFile[iStep] + llStart + llSize;
+	// XXX 换行符
 	while (*p != '\n')
 	{
-		++size;
+		++llSize;
 		++p;
 	}
-	return size;
+	return llSize;
 }
 
 
-void inline readLoad(int step, ifstream *file, streamoff start, streamsize size)
+void inline readLoad(int iStep, ifstream *file, streamoff llStart, streamsize llSize)
 {
-	file->seekg(start);
-	file->read(loadedFile[step], size);
+	file->seekg(llStart);
+	file->read(loadedFile[iStep], llSize);
 }
 
 
-vector<string> ReadLineToVec(int step, streamoff start, streamsize size, int id)
+vector<string> ReadLineToVec(int iStep, streamoff llStart, streamsize llSize)
 {
 	char *pFileBuffer = NULL;
 	char *pLineBuffer = NULL;
 	string sLineBuffer;
-	// char *lineBuffer = NULL;
 	string sFileBuffer;
 	string sLine;
-	vector<string> vStringLine;
+	vector<string> vecStringLine;
 
-	pFileBuffer = loadedFile[step];
+	pFileBuffer = loadedFile[iStep];
 
-	// debug
 	sFileBuffer = pFileBuffer;
-	sLineBuffer = sFileBuffer.substr(start, size);
+	sLineBuffer = sFileBuffer.substr(llStart, llSize);
 	pLineBuffer = (char*)sLineBuffer.data();
-	vStringLine.clear();
+	vecStringLine.clear();
 
-	// FIXME
-	// 行分割符\r\n \n ; windows系统和unix系统的分割符不一样; 期望通过配置文件或自动知道, 也可以统一用\n为分隔符, 处理的时候兼容\r 
-	// 现在这样处理,每个vector元素末尾都有一个'\r'
+	// XXX 换行符
 	char *strDelim = (char*)"\n";
 	char *strToken = NULL;
 	char *nextToken = NULL;
@@ -234,41 +205,46 @@ vector<string> ReadLineToVec(int step, streamoff start, streamsize size, int id)
 	while (strToken != NULL)
 	{
 		sLine.assign(strToken);
-		vStringLine.push_back(sLine);
+		vecStringLine.push_back(sLine);
 		strToken = strtok_s(NULL, strDelim, &nextToken);
 	}
-	cout << vStringLine[0] << endl ;
-	cout << vStringLine.back() << endl ;
+	cout << vecStringLine[0] << endl;
+	cout << vecStringLine.back() << endl;
 
-	return vStringLine;
+	return vecStringLine;
 }
 
 
-void ParseMsgLine(vector<string> sevc, string KeyStr)
+void ParseMsgLine(vector<string> vecStr, string strKey)
 {
 	string MsgId;
 
 	auto end = mymap.end();
-	if (!sevc.empty())
+	if (!vecStr.empty())
 	{
-		for (string::size_type i = 0; i < sevc.size(); ++i)
+		for (string::size_type i = 0; i < vecStr.size(); ++i)
 		{
-			MsgId = GetMsgValue(sevc[i], KeyStr);
-			mymap.insert(pair<string, string>(MsgId, sevc[i]));
+			MsgId = strGetMsgValue(vecStr[i], strKey);
+			mymap.insert(pair<string, string>(MsgId, vecStr[i]));
 		}
 	}
+}
 
-	// TODO 后面再遍历所有map, 对桶元素数量小于2的，认为确实req或ans
-	/*
+
+// TODO 定时遍历map
+// 扫描map,找出超时的lbm
+void TimeoutScan(unordered_multimap<string, string> mymap)
+{
+	// 后面再遍历所有map, 对桶元素数量小于2的，认为确实req或ans
 	auto begin = mymap.begin();
 	for (; begin != mymap.end(); begin++)
 	{
 		if (mymap.count(begin->first) < 2)
 		{
-			cout << "\n缺失应答串的MsgId： \t" << GetMsgValue(begin->second, "MsgId") << endl << endl;
+			cout << "\n缺失应答串的MsgId： \t" << strGetMsgValue(begin->second, "MsgId") << endl << endl;
 			cout << endl << begin->second << endl << endl;
 		}
 	}
-	*/
 }
+
 

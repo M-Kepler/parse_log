@@ -10,27 +10,27 @@ using namespace std;
 
 /*
  * @brief	   从请求/应答串中查找key对应的value值 
- * @param[in]  str_orig  待分割的字符串
- * @param[in]  str_key   待查找的key
- * @param[in]  str_split 从key开始出现的第一个截取结束符;
- * @return	   str_value 查找成功返回value,查找失败返回空字符串; 若从key开始到字符串结束没有找到str_split, 则返回key开始到字符串结束
+ * @param[in]  strOrig			待分割的字符串
+ * @param[in]  strKey			待查找的key
+ * @param[in]  strSplit			从key开始出现的第一个截取结束符;
+ * @return	   strRetValue		查找成功返回value,查找失败返回空字符串; 若从key开始到字符串结束没有找到str_split, 则返回key开始到字符串结束
  */
-string GetMsgValue(string str_orig, string str_key, string str_split=",");
+string strGetMsgValue(string strOrig, string strKey, string strSplit=",");
 
 
 /*
  * @brief       日志行字符串转毫秒时间
- * @param[in]   str 字符串(前15位表示时间,16-19。。。)
- * @return      time_t 返回毫秒级时间
+ * @param[in]   str				字符串(前15位表示时间,16-19。。。)
+ * @return      time_t			返回毫秒级时间
  */
 time_t StringToMs(string str);
 
 
 /*
 * @brief        判断字符串前len位是否是有效日期
-* @param[in]    str 字符串
-* @param[in]    len 字符串前len位
-* @return       bool 是则返回 true, 否则返回false
+* @param[in]    str				字符串
+* @param[in]    len				字符串前len位
+* @return       bool			是则返回 true, 否则返回false
 */
 bool bCheckDate(string str, int len = 15);
 
