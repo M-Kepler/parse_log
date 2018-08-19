@@ -6,9 +6,8 @@ const int iThreadCount = 4;
 
 streamsize llLoadSize = 8000; // XXX 调整 
 char* loadedFile[2]; // 存放指向 char* 类型的指针的数组
-
 unordered_multimap<string, string> mymap;
-vector<string> vecThreadLines, vecEndThreadLines;
+
 
 void multi_thread()
 {
@@ -16,7 +15,8 @@ void multi_thread()
 	ios::sync_with_stdio(false);
 	// XXX
 	// 实际上这个map是需要一致存在的
-	// mymap.clear();
+	// unordered_multimap<string, string> mymap;
+	vector<string> vecThreadLines, vecEndThreadLines;
 
 	// 双缓冲
 	// XXX delete的问题
@@ -117,7 +117,7 @@ void multi_thread()
 					cout << "线程 " << i << " 开始读入位置llThreadIndex: " << llThreadIndex << "\t实际线程 " << i << " 读入大小llFileLen:" << llFileLen << endl;
 					vecThreadLines = ReadLineToVec(bBufferIndex, llThreadIndex, llFileLen);
 					cout << "线程 " << i << " 共读入: " << vecThreadLines.size() << "行" << endl << endl << endl;
-					threads[i] = thread(ParseMsgLine, vecThreadLines, "MsgId");
+					threads[i] = thread(ParseMsgLine, mymap, vecThreadLines, "MsgId");
 					llThreadIndex += llFileLen;
 				}
 				else
@@ -130,7 +130,7 @@ void multi_thread()
 			if ((llRealSize - llThreadIndex) > 70)
 			{
 				vecEndThreadLines = ReadLineToVec(bBufferIndex, llThreadIndex, llRealSize - llThreadIndex);
-				threads[0] = thread(ParseMsgLine, vecEndThreadLines, "MsgId");
+				threads[0] = thread(ParseMsgLine, mymap, vecEndThreadLines, "MsgId");
 				cout << "线程: 4 " << " 共读入: " << vecEndThreadLines.size() << "行" << endl;
 			}
 
@@ -142,6 +142,7 @@ void multi_thread()
 		delete loadedFile[1];
 		file.close();
 	}
+	// TimeoutScan(mymap);
 	t_end = clock();
 
 	cout << "\r\nAll completed in " << t_end - t_start << "ms." << endl;
@@ -208,14 +209,17 @@ vector<string> ReadLineToVec(int iStep, streamoff llStart, streamsize llSize)
 		vecStringLine.push_back(sLine);
 		strToken = strtok_s(NULL, strDelim, &nextToken);
 	}
+	/* debug */
+	/*
 	cout << vecStringLine[0] << endl;
 	cout << vecStringLine.back() << endl;
+	*/
 
 	return vecStringLine;
 }
 
 
-void ParseMsgLine(vector<string> vecStr, string strKey)
+void ParseMsgLine(unordered_multimap<string, string> mymap, vector<string> vecStr, string strKey)
 {
 	string MsgId;
 

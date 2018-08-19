@@ -43,9 +43,7 @@ struct MsgIdHash
 typedef unordered_map<char *, unsigned int, MsgIdHash, StrCmp> HashMap;
 typedef unordered_map<char *, unsigned int, MsgIdHash, StrCmp>::iterator KeySet;
 
-
 void multi_thread();
-
 
 /*
  * @brief       从 pFileBuffer 中按行装入vec
@@ -100,7 +98,7 @@ streamsize inline getBlockSize(int iStep, streamoff llStart, streamsize llSize);
 * @param[in]	strKey			从串中指定用哪个的hash值作为Key
 * @return		无
 */
-void ParseMsgLine(vector<string> vecStr, string strKey = "MsgId");
+void ParseMsgLine(unordered_multimap<string, string> mymap, vector<string> vecStr, string strKey);
 
 
 void TimeoutScan(unordered_multimap<string, string> mymap);

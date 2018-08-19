@@ -27,9 +27,13 @@
     <ClCompile Include="utils.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="test.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="runlog_config.ini" />
+    <None Include="BugList.md" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inifile.h">
@@ -45,6 +49,5 @@
   <ItemGroup>
     <Text Include="runlog0.log" />
     <Text Include="runlog0-3.1.log" />
-    <Text Include="runlog-test.log" />
   </ItemGroup>
 </Project>
