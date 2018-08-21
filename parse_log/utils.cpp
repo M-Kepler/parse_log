@@ -2,7 +2,7 @@
 #include "utils.h"
 
 
-string strGetMsgValue(string strOrig, string strKey, string strSplit)
+string GetMsgValue(string strOrig, string strKey, string strSplit)
 {
 	string strRetValue = "";
 	int iStrOrigLen;
