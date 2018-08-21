@@ -15,7 +15,7 @@ using namespace std;
  * @param[in]  strSplit			从key开始出现的第一个截取结束符;
  * @return	   strRetValue		查找成功返回value,查找失败返回空字符串; 若从key开始到字符串结束没有找到str_split, 则返回key开始到字符串结束
  */
-string strGetMsgValue(string strOrig, string strKey, string strSplit=",");
+string GetMsgValue(string strOrig, string strKey, string strSplit=",");
 
 
 /*

@@ -6,8 +6,12 @@ const int iThreadCount = 4;
 
 streamsize llLoadSize = 8000; // XXX 调整 
 char* loadedFile[2]; // 存放指向 char* 类型的指针的数组
+typedef unordered_multimap<string, string> LogMap;
+typedef unordered_multimap<string, string>::iterator LogMapKeySet;
+LogMap *pLogMaps;
+LogMap allLogMap;
 
-unordered_multimap<string, string> mymap;
+
 vector<string> vecThreadLines, vecEndThreadLines;
 
 void multi_thread()
@@ -16,7 +20,7 @@ void multi_thread()
 	ios::sync_with_stdio(false);
 	// XXX
 	// 实际上这个map是需要一致存在的
-	// mymap.clear();
+	pLogMaps = new LogMap[iThreadCount];
 
 	// 双缓冲
 	// XXX delete的问题
@@ -117,7 +121,8 @@ void multi_thread()
 					cout << "线程 " << i << " 开始读入位置llThreadIndex: " << llThreadIndex << "\t实际线程 " << i << " 读入大小llFileLen:" << llFileLen << endl;
 					vecThreadLines = ReadLineToVec(bBufferIndex, llThreadIndex, llFileLen);
 					cout << "线程 " << i << " 共读入: " << vecThreadLines.size() << "行" << endl << endl << endl;
-					threads[i] = thread(ParseMsgLine, vecThreadLines, "MsgId");
+					// threads[i] = thread(ParseMsgLine, std::ref(mymap), vecThreadLines, "MsgId");
+					threads[i] = thread(ParseMsgLine, vecThreadLines, i, "MsgId");
 					llThreadIndex += llFileLen;
 				}
 				else
@@ -130,7 +135,8 @@ void multi_thread()
 			if ((llRealSize - llThreadIndex) > 70)
 			{
 				vecEndThreadLines = ReadLineToVec(bBufferIndex, llThreadIndex, llRealSize - llThreadIndex);
-				threads[0] = thread(ParseMsgLine, vecEndThreadLines, "MsgId");
+				// threads[0] = thread(ParseMsgLine, std::ref(mymap), vecEndThreadLines, "MsgId");
+				threads[0] = thread(ParseMsgLine, vecEndThreadLines, 0,"MsgId");
 				cout << "线程: 4 " << " 共读入: " << vecEndThreadLines.size() << "行" << endl;
 			}
 
@@ -138,10 +144,27 @@ void multi_thread()
 			cout << "文件剩余大小: llFileSize: " << llFileSize << endl << endl << endl << endl;
 		}
 
+		// 清理
 		delete loadedFile[0];
 		delete loadedFile[1];
 		file.close();
+
+		// 组合map
+		// 每个线程对各自的map进行插入操作,避免了release模式下正常, debug模式下偶现线程lang住的问题
+		// 但是之前时间600ms左右，现在是1000ms左右。。。
+		//	LogMap *map = pLogMaps + id;
+		for (int i = 0; i < iThreadCount; ++i)
+		{
+			LogMapKeySet p = (pLogMaps + i)->begin();
+			LogMapKeySet end = (pLogMaps + i)->end();
+			for (; p != end; ++p)
+			{
+				allLogMap.insert(pair<string, string>(p->first, p->second));
+			}
+		}
+
 	}
+	TimeoutScan(allLogMap);
 	t_end = clock();
 
 	cout << "\r\nAll completed in " << t_end - t_start << "ms." << endl;
@@ -215,17 +238,18 @@ vector<string> ReadLineToVec(int iStep, streamoff llStart, streamsize llSize)
 }
 
 
-void ParseMsgLine(vector<string> vecStr, string strKey)
+void ParseMsgLine( vector<string> vecStr, int id, string strKey)
 {
 	string MsgId;
+	LogMap *map = pLogMaps + id;
 
-	auto end = mymap.end();
+	auto end = map->end();
 	if (!vecStr.empty())
 	{
 		for (string::size_type i = 0; i < vecStr.size(); ++i)
 		{
-			MsgId = strGetMsgValue(vecStr[i], strKey);
-			mymap.insert(pair<string, string>(MsgId, vecStr[i]));
+			MsgId = GetMsgValue(vecStr[i], strKey);
+			map->insert(pair<string, string>(MsgId, vecStr[i]));
 		}
 	}
 }
@@ -233,6 +257,7 @@ void ParseMsgLine(vector<string> vecStr, string strKey)
 
 // TODO 定时遍历map
 // 扫描map,找出超时的lbm
+// 扫描的时候是否需要考虑线程同步
 void TimeoutScan(unordered_multimap<string, string> mymap)
 {
 	// 后面再遍历所有map, 对桶元素数量小于2的，认为确实req或ans
@@ -241,8 +266,8 @@ void TimeoutScan(unordered_multimap<string, string> mymap)
 	{
 		if (mymap.count(begin->first) < 2)
 		{
-			cout << "\n缺失应答串的MsgId： \t" << strGetMsgValue(begin->second, "MsgId") << endl << endl;
-			cout << endl << begin->second << endl << endl;
+			cout << "\n缺失应答串的MsgId： \t" << GetMsgValue(begin->second, "MsgId") << endl << endl;
+			// cout << endl << begin->second << endl << endl;
 		}
 	}
 }

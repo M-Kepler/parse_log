@@ -30,6 +30,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="runlog_config.ini" />
+    <None Include="BugList.md" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inifile.h">

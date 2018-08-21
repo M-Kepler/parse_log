@@ -123,6 +123,7 @@
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="BugList.md" />
     <None Include="runlog_config.ini" />
   </ItemGroup>
   <ItemGroup>
