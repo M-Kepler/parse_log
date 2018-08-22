@@ -4,17 +4,16 @@
 #include "inifile.h"
 #include "multi_thread.h"
 #include "utils.h"
+#include "log.h"
 using namespace std;
-// using namespace inifile;
 
 
 char *loadedFile2[2];
-// string Section = "CONFIG";
 const char* filepath = "runlog_config.ini";
 const char* filename = "runlog0-3.1.log";
 
 
-int main(int argv, char* argc)
+int main(int argv, char* argc[])
 {
 	bool step = 0;
 	streamsize loadsize = 250000;
@@ -61,7 +60,7 @@ int main(int argv, char* argc)
 
 
 	/* 时间处理 */
-	if (UTILS_RTMSG_OK == clUtils.InitGlog())
+	if (UTILS_RTMSG_OK == InitGlog(argc))
 	{
 		cout << "初始化glog成功" << endl;
 	}
@@ -74,7 +73,7 @@ int main(int argv, char* argc)
 	{
 		cout << "非正常日期时间" << endl;
 	}
-	clUtils.ShutdownGlog();
+	CloseGlog();
 
 
 	/* 按行读入vector */

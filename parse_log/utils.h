@@ -1,6 +1,4 @@
 #pragma once
-#define GOOGLE_GLOG_DLL_DECL
-#define GLOG_NO_ABBREVIATED_SEVERITIES
 
 #ifndef _UTILS_H
 #define _UTILS_H
@@ -11,13 +9,16 @@
 #include <string>
 #include <fstream>
 #include "inifile.h"
-#include "glog/logging.h"
+#include "log.h"
 
 using namespace std;
 using namespace inifile;
 
+// BXG::CLogger * g_pLogger = new BXG::CLogger(".\\log", "secu_callback");
 
-enum UtilsError {
+
+enum UtilsError
+{
 	UTILS_RTMSG_OK = 000000,
 	UTILS_INI_FILE_ERROR = 000001,
 	UTILS_OPEN_SUCCESS = 100000,
@@ -25,6 +26,7 @@ enum UtilsError {
 	UTILS_DATE_EMPTY = 600001,       // 数据为空　　
 	UTILS_DOC_FAILED = 600004,       // 序列化失败
 };
+
 
 class CUtils
 {
@@ -34,9 +36,9 @@ public:
 
 public:
 
-	UtilsError InitGlog();
+	// UtilsError InitGlog(char* argv[]);
 	// static UtilsError InitGlog(const char*);
-	void ShutdownGlog();
+	// void ShutdownGlog();
 
 
 	/*
@@ -78,15 +80,11 @@ public:
 	*/
 	bool bCheckDate(string strOrig, int iStart, int iEnd);
 
-	char * getConfigPath();
-
 
 private:
 	// IniFile clIniFile;
 	UtilsError _errorCode;
-	// static const char* ConfigPath;
-	char* ConfigPath = (char*)"./runlog_config.ini";
-
+	// char* ConfigPath = (char*)"./runlog_config.ini";
 	int _errorLineNum;
 	string _errorStr;
 };

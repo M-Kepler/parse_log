@@ -1,83 +1,14 @@
 
-
 #include "utils.h"
-
-
-// TODO 
-// 可不可以弄个全局的, 类创建对象时就初始化glog
 
 CUtils::CUtils()
 {
-	cout << __FILE__ << __LINE__ << "utils creator" << endl;
-	// InitGlog(ConfigPath);
+	cout << __FILE__ << __LINE__ << "utils create" << endl;
 }
 
 CUtils::~CUtils()
 {
 	cout << "utils destroy" << endl;
-	// ShutdownGlog();
-}
-
-// const char * CUtils::ConfigPath = (char*)"./runlog_config.ini";
-
-// UtilsError CUtils::InitGlog(const char* ConfigPath)
-UtilsError CUtils::InitGlog()
-{
-	IniFile clIniFile;
-	int iRetCode;
-	string Section;
-	string Key_Log_Lvl;
-	string Key_Log_Path;
-	string Key_LogFile_Max_Size;
-	string Key_Log_Buf_Secs;
-	string Value_Log_Lvl;
-	string Value_Log_Path;
-	string Value_LogFile_Max_Size;
-	string Value_Log_Buf_Secs;
-	char* ConfigFile;
-
-	ConfigFile = getConfigPath();
-	Key_Log_Lvl = "Log_Lvl";
-	Key_LogFile_Max_Size = "LogFile_Max_Size";
-	Key_Log_Path = "Log_Path";
-	Key_Log_Buf_Secs = "Log_Buf_Secs";
-	Section = "GLOG";
-
-	clIniFile.load(ConfigFile);
-	clIniFile.getValue(Section, Key_Log_Lvl, Value_Log_Lvl);
-	cout << Value_Log_Lvl << endl;
-
-	if ((iRetCode = clIniFile.getValue(Section, Key_Log_Lvl, Value_Log_Lvl)) != RET_OK
-		|| (iRetCode = clIniFile.getValue(Section, Key_Log_Path, Value_Log_Path)) != RET_OK
-		|| (iRetCode = clIniFile.getValue(Section, Key_LogFile_Max_Size, Value_LogFile_Max_Size)) != RET_OK
-		|| (iRetCode = clIniFile.getValue(Section, Key_Log_Buf_Secs, Value_Log_Buf_Secs)) != RET_OK
-		)
-	{
-		return UTILS_INI_FILE_ERROR;
-	}
-
-	// FIXME
-	// 全局初始化glog
-	google::InitGoogleLogging("test");
-    // 设置glog的输出级别，这里的含义是输出INFO级别以上的信息
-	google::SetStderrLogging(google::GLOG_INFO);
-
-	// 设置INFO/WARNING/ERROR级别以上的信息log文件的路径和前缀名
-	google::SetLogDestination(google::GLOG_INFO, (Value_Log_Path + "\\INFO_").c_str());
-	google::SetLogDestination(google::GLOG_WARNING, (Value_Log_Path + "\\WARNING_").c_str());
-	google::SetLogDestination(google::GLOG_ERROR, (Value_Log_Path + "\\ERROR_").c_str());
-
-	FLAGS_logbufsecs = stoi(Value_Log_Buf_Secs);
-	FLAGS_max_log_size = stoi(Value_LogFile_Max_Size);
-
-	// FLAGS_colorlogtostderr = true;                     // 开启终端颜色区分
-	return UTILS_RTMSG_OK;
-}
-
-
-void CUtils::ShutdownGlog()
-{
-	google::ShutdownGoogleLogging();
 }
 
 
@@ -187,10 +118,5 @@ bool CUtils::bCheckDate(string strOrig, int iStart, int iEnd)
 		&& nMinute == t.GetMinute()
 		&& nSecond == t.GetSecond()
 		);
-}
-
-char * CUtils::getConfigPath()
-{
-	return ConfigPath;
 }
 

@@ -131,6 +131,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="inifile.cpp" />
+    <ClCompile Include="log.cpp" />
     <ClCompile Include="multi_thread.cpp" />
     <ClCompile Include="parse_log.cpp" />
     <ClCompile Include="test.cpp" />
@@ -143,6 +144,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inifile.h" />
+    <ClInclude Include="log.h" />
     <ClInclude Include="multi_thread.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
