@@ -1,25 +1,3 @@
-/*
-map结构:
-{
-	"msgid": {
-		"req": {
-			"req_msgid": {
-				"LBM": "",
-				"str_req_time": "",
-				"ll_req_time": "",
-				"msg_detail": ""
-			}
-		},
-		"ans": {
-			"ans_msgid": {
-				"ll_ans_time": ""
-			}
-		}
-	}
-}
-
-* 先做3.1的日志格式
-*/
 
 #include <iostream>
 #include <thread>
@@ -27,13 +5,13 @@ map结构:
 #include "multi_thread.h"
 #include "utils.h"
 using namespace std;
-using namespace inifile;
+// using namespace inifile;
 
 
 char *loadedFile2[2];
-string Section = "CONFIG";
+// string Section = "CONFIG";
 const char* filepath = "runlog_config.ini";
-const char* filename = "runlog-test.log";
+const char* filename = "runlog0-3.1.log";
 
 
 int main(int argv, char* argc)
@@ -44,6 +22,8 @@ int main(int argv, char* argc)
 	loadedFile2[1] = new char[loadsize];
 
 	// 读取文件
+	CUtils clUtils;
+
 	ifstream file;
 	file.open(filename, ios::binary | ios::in);
 	if (!file)
@@ -60,6 +40,7 @@ int main(int argv, char* argc)
 	ini.load(filepath);
 	string Key_ScanTime = "ScanTime";
 	string Value_ScanTime;
+	string Section = "CONFIG"
 	ini.getValue(Section, Key_ScanTime, Value_ScanTime);
 	cout << Key_ScanTime <<": " << Value_ScanTime << endl;
 	*/
@@ -80,16 +61,20 @@ int main(int argv, char* argc)
 
 
 	/* 时间处理 */
-	/*
-	if (bCheckDate(str_req))
+	if (UTILS_RTMSG_OK == clUtils.InitGlog())
 	{
-		cout << str_req.substr(0, 15) << " 转换为毫秒: " << StringToMs(str_req) << endl;
+		cout << "初始化glog成功" << endl;
+	}
+	if (clUtils.bCheckDate(str_req, 0, 15))
+	{
+		LOG(INFO) << "This is my first glog INFO ";        // 像C++标准流一样去使用就可以了，把这条信息定义为INFO级别
+		cout << str_req.substr(0, 15) << " 转换为毫秒: " << clUtils.StringToMs(str_req, 0, 15) << endl;
 	}
 	else
 	{
 		cout << "非正常日期时间" << endl;
 	}
-	*/
+	clUtils.ShutdownGlog();
 
 
 	/* 按行读入vector */

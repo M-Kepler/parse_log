@@ -34,6 +34,7 @@
   <ItemGroup>
     <None Include="runlog_config.ini" />
     <None Include="BugList.md" />
+    <None Include="ReadMe.md" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inifile.h">

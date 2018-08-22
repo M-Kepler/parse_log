@@ -11,10 +11,12 @@ typedef unordered_multimap<string, string>::iterator LogMapKeySet;
 LogMap *pLogMaps;
 LogMap allLogMap;
 
+CUtils clUtils;
 
 vector<string> vecThreadLines, vecEndThreadLines;
 
-void multi_thread()
+
+int multi_thread()
 {
 	const char* filename = "runlog0-3.1.log";
 	ios::sync_with_stdio(false);
@@ -35,12 +37,19 @@ void multi_thread()
 
 	// 读取文件
 	ifstream file;
+	/*
 	file.open(filename, ios::binary | ios::in);
 
 	if (!file)
 	{
 		cout << "Error: File \"" << filename << "\" do not exist!" << endl;
 		exit(1);
+	}
+	*/
+	UtilsError errCode = clUtils.LoadFile(file, filename);
+	if (UTILS_OPEN_SUCCESS != errCode)
+	{
+		return errCode;
 	}
 	else
 	{
@@ -168,6 +177,7 @@ void multi_thread()
 	t_end = clock();
 
 	cout << "\r\nAll completed in " << t_end - t_start << "ms." << endl;
+	return 0;
 }
 
 
@@ -238,6 +248,8 @@ vector<string> ReadLineToVec(int iStep, streamoff llStart, streamsize llSize)
 }
 
 
+// TODO
+// 对于一个请求分割多行的情况, 可否通过重载这个函数来实现, 判断行的开始和结束，并从日志行中提取需要的撞到map中
 void ParseMsgLine( vector<string> vecStr, int id, string strKey)
 {
 	string MsgId;
@@ -246,10 +258,20 @@ void ParseMsgLine( vector<string> vecStr, int id, string strKey)
 	auto end = map->end();
 	if (!vecStr.empty())
 	{
+		// 如果日志行中没有MsgId呢?
 		for (string::size_type i = 0; i < vecStr.size(); ++i)
 		{
-			MsgId = GetMsgValue(vecStr[i], strKey);
-			map->insert(pair<string, string>(MsgId, vecStr[i]));
+			MsgId = clUtils.GetMsgValue(vecStr[i], strKey);
+			if (MsgId.empty())
+			{
+				// TODO
+				// 对于非LBM req和ans的日志行
+			}
+			else
+			{
+				map->insert(pair<string, string>(MsgId, vecStr[i]));
+			}
+
 		}
 	}
 }
@@ -266,7 +288,7 @@ void TimeoutScan(unordered_multimap<string, string> mymap)
 	{
 		if (mymap.count(begin->first) < 2)
 		{
-			cout << "\n缺失应答串的MsgId： \t" << GetMsgValue(begin->second, "MsgId") << endl << endl;
+			cout << "\n缺失应答串的MsgId： \t" << clUtils.GetMsgValue(begin->second, "MsgId") << endl << endl;
 			// cout << endl << begin->second << endl << endl;
 		}
 	}

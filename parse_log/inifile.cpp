@@ -308,7 +308,7 @@ namespace inifile
 		return getValues(section, key, values, comments);
 	}
 	int IniFile::getValues(const string &section, const string &key,
-		vector<string> &values, vector<string> &comments)
+	vector<string> &values, vector<string> &comments)
 	{
 		string value, comment;
 

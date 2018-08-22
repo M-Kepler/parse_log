@@ -44,7 +44,7 @@ typedef unordered_map<char *, unsigned int, MsgIdHash, StrCmp> HashMap;
 typedef unordered_map<char *, unsigned int, MsgIdHash, StrCmp>::iterator KeySet;
 
 
-void multi_thread();
+int multi_thread();
 
 
 /*
@@ -103,9 +103,12 @@ streamsize inline getBlockSize(int iStep, streamoff llStart, streamsize llSize);
 // void ParseMsgLine(unordered_multimap<string, string> &mymap, vector<string> vecStr, string strKey);
 void ParseMsgLine(vector<string> vecStr, int id, string strKey = "MsgId");
 
-
+/*
+ * @brief       定时扫描map
+ * @param[in]   mymap			所有日志的map
+ * @return      return			return_command
+ */
 void TimeoutScan(unordered_multimap<string, string> mymap);
-
 
 
 
