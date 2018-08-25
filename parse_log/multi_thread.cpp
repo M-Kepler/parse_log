@@ -28,6 +28,7 @@ vector<string> vecThreadLines, vecEndThreadLines;
 
 int multi_thread()
 {
+
 	const char* filename = "runlog0-3.1.log";
 	ios::sync_with_stdio(false);
 	pLogMaps = new LogMap[iThreadCount];
@@ -268,6 +269,7 @@ void ParseMsgLine( vector<string> vecStr, int id, string strKey)
 	string MsgId;
 	LogMap *map = pLogMaps + id;
 
+	LOG(INFO) << "id: " << id << "\tstrKey: " << strKey << endl;
 	auto end = map->end();
 	if (!vecStr.empty())
 	{
@@ -291,7 +293,8 @@ void ParseMsgLine( vector<string> vecStr, int id, string strKey)
 
 
 // TODO 定时遍历map
-// 扫描map,找出超时的lbm
+// 扫描map, 找出超时的lbm
+// 扫描map, 找出应答错误的lbm
 // 扫描的时候是否需要考虑线程同步
 void TimeoutScan(unordered_multimap<string, string> mymap)
 {

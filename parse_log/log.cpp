@@ -1,6 +1,7 @@
 #include "log.h"
 
-int InitGlog(char* argv[])
+// int CGlog::InitGlog(char* argv[])
+int CGlog::InitGlog()
 {
 	IniFile clIniFile;
 	int iRetCode;
@@ -39,7 +40,7 @@ int InitGlog(char* argv[])
 	google::SetLogFilenameExtension(".log");
 	FLAGS_logbufsecs = stoi(Value_Log_Buf_Secs);
 	FLAGS_max_log_size = stoi(Value_LogFile_Max_Size);
-	google::InitGoogleLogging(argv[0]);
+	google::InitGoogleLogging("parse_runlog");
 
 	// 设置INFO/WARNING/ERROR级别以上的信息log文件的路径和前缀名
 	google::SetLogDestination(google::GLOG_INFO, (Value_Log_Path + "\\INFO").c_str());
@@ -59,14 +60,14 @@ int InitGlog(char* argv[])
 }
 
 
-char * GetConfigPath()
+char * CGlog::GetConfigPath()
 {
-	char* ConfigPath = (char*)"./runlog_config.ini";
 	return ConfigPath;
 }
 
 
-void CloseGlog()
+void CGlog::CloseGlog()
 {
+	cout << "关闭glog" << endl;
 	google::ShutdownGoogleLogging();
 }

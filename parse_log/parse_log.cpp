@@ -60,20 +60,18 @@ int main(int argv, char* argc[])
 
 
 	/* 时间处理 */
-	if (UTILS_RTMSG_OK == InitGlog(argc))
-	{
-		cout << "初始化glog成功" << endl;
-	}
+	extern CGlog *p_glog;
+	p_glog->InitGlog();
+
 	if (clUtils.bCheckDate(str_req, 0, 15))
 	{
-		LOG(INFO) << "This is my first glog INFO ";        // 像C++标准流一样去使用就可以了，把这条信息定义为INFO级别
+		LOG(INFO) << "打印日志";        // 像C++标准流一样去使用就可以了，把这条信息定义为INFO级别
 		cout << str_req.substr(0, 15) << " 转换为毫秒: " << clUtils.StringToMs(str_req, 0, 15) << endl;
 	}
 	else
 	{
 		cout << "非正常日期时间" << endl;
 	}
-	CloseGlog();
 
 
 	/* 按行读入vector */
@@ -161,5 +159,6 @@ int main(int argv, char* argc[])
 	delete loadedFile2[0];
 	delete loadedFile2[1];
 	system("pause");
+	p_glog->CloseGlog();
 	return 0;
 }

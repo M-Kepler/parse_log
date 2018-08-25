@@ -1,5 +1,14 @@
-
 #include "utils.h"
+
+// CGlog *p_clGlog = CGlog::GetInstance();
+
+// const CGlog* CGlog::m_instance = new CGlog;
+
+CGlog *p_glog = CGlog::GetInstance();
+CGlog *p_glog2 = CGlog::GetInstance();
+
+
+
 
 CUtils::CUtils()
 {
@@ -8,7 +17,7 @@ CUtils::CUtils()
 
 CUtils::~CUtils()
 {
-	cout << "utils destroy" << endl;
+	cout << __FILE__ << __LINE__ << "utils destroy" << endl;
 }
 
 
