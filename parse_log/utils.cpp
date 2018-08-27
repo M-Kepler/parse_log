@@ -1,23 +1,17 @@
 #include "utils.h"
 
-// CGlog *p_clGlog = CGlog::GetInstance();
 
-// const CGlog* CGlog::m_instance = new CGlog;
-
+// glog µ¥Àý
 CGlog *p_glog = CGlog::GetInstance();
-CGlog *p_glog2 = CGlog::GetInstance();
-
-
 
 
 CUtils::CUtils()
 {
-	cout << __FILE__ << __LINE__ << "utils create" << endl;
 }
+
 
 CUtils::~CUtils()
 {
-	cout << __FILE__ << __LINE__ << "utils destroy" << endl;
 }
 
 
@@ -127,5 +121,11 @@ bool CUtils::bCheckDate(string strOrig, int iStart, int iEnd)
 		&& nMinute == t.GetMinute()
 		&& nSecond == t.GetSecond()
 		);
+}
+
+
+string CUtils::GetConfigValue(string section, string key)
+{
+	return string();
 }
 

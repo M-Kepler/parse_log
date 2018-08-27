@@ -81,6 +81,15 @@ public:
 	bool bCheckDate(string strOrig, int iStart, int iEnd);
 
 
+	/*
+	 * @brief       获取配置
+	 * @param[in]   section			节点[]
+	 * @param[in]   key				键值
+	 * @return      value			对应的值
+	 */
+	string GetConfigValue(string section, string key);
+
+
 private:
 	// IniFile clIniFile;
 	UtilsError _errorCode;

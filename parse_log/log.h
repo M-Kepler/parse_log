@@ -15,15 +15,23 @@ using namespace inifile;
 
 /*
  * 改造成单例模式; 只产生一个实例
+ * 从产生第一个单例开始进行对glog的初始化
+ * 程序运行结束调用析构函数时会关闭glog
  */
 
 class CGlog
 {
 private:
-	CGlog() { };
+	CGlog()
+	{
+		InitGlog();
+	};
 	CGlog(const CGlog&) = delete;
 	CGlog& operator= (const CGlog &) = delete;
-	~CGlog() {};
+	~CGlog()
+	{
+		CloseGlog();
+	};
 
 public:
 

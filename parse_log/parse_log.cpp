@@ -34,6 +34,7 @@ int main(int argv, char* argc[])
 	string str_ans = "20180719-094803-110762 12343    98 Ans: LBM=L1160005, MsgId=000001050001D55B1F297DD2, Len=792, Cost=161, Buf=&_1=0, 0, 业务程序运行正常, &_2=13863, 2, 21, 开户权限组<营业部>, 0, 10012, 2011-07-11 17:12:43.299541";
 
 	/* 解析配置文件 */
+
 	/*
 	IniFile ini;
 	ini.load(filepath);
@@ -46,8 +47,7 @@ int main(int argv, char* argc[])
 
 
 	/* 获取msg中key的value */
-	// TODO
-	// WIN版要做修改
+
 	/*
 	const char* key_lbm = "LBM";
 	const char* str_split = ",";
@@ -61,7 +61,6 @@ int main(int argv, char* argc[])
 
 	/* 时间处理 */
 	extern CGlog *p_glog;
-	p_glog->InitGlog();
 
 	if (clUtils.bCheckDate(str_req, 0, 15))
 	{
@@ -153,12 +152,13 @@ int main(int argv, char* argc[])
 	}
 	*/
 
-	multi_thread();
+	// multi_thread();
 	
 
 	delete loadedFile2[0];
 	delete loadedFile2[1];
 	system("pause");
-	p_glog->CloseGlog();
+	// p_glog->CloseGlog();
 	return 0;
 }
+

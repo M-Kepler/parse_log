@@ -1,6 +1,6 @@
 #include "log.h"
 
-// int CGlog::InitGlog(char* argv[])
+
 int CGlog::InitGlog()
 {
 	IniFile clIniFile;
@@ -68,6 +68,6 @@ char * CGlog::GetConfigPath()
 
 void CGlog::CloseGlog()
 {
-	cout << "¹Ø±Õglog" << endl;
 	google::ShutdownGoogleLogging();
 }
+
