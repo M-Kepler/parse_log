@@ -133,6 +133,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="mylibcurl.cpp" />
     <ClCompile Include="inifile.cpp" />
     <ClCompile Include="log.cpp" />
     <ClCompile Include="multi_thread.cpp" />
@@ -146,6 +147,7 @@
     <None Include="runlog_config.ini" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="mylibcurl.h" />
     <ClInclude Include="inifile.h" />
     <ClInclude Include="log.h" />
     <ClInclude Include="multi_thread.h" />

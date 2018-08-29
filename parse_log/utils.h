@@ -10,11 +10,18 @@
 #include <fstream>
 #include "inifile.h"
 #include "log.h"
+#include "mylibcurl.h"
 
 using namespace std;
 using namespace inifile;
 
 // BXG::CLogger * g_pLogger = new BXG::CLogger(".\\log", "secu_callback");
+
+// URL 信息头
+struct URL
+{
+
+};
 
 
 enum UtilsError
@@ -23,8 +30,9 @@ enum UtilsError
 	UTILS_OPEN_SUCCESS = 100000,
 	UTILS_GET_INI_ERROR = 100001,   // 获取配置文件值出错
 	UTILS_FILE_ERROR = 100001,
-	UTILS_DATE_EMPTY = 600001,       // 数据为空　　
-	UTILS_DOC_FAILED = 600004,       // 序列化失败
+	UTILS_DATE_EMPTY = 200001,       // 数据为空　　
+	UTILS_DOC_FAILED = 200002,       // 序列化失败
+	UTILS_URL_ERROR =  300001
 };
 
 
@@ -92,11 +100,34 @@ public:
 	UtilsError GetConfigValue(string & strValue, string strKey, string strSection="CONFIG");
 
 
+	// XXX 
+	// 有没有必要重载这个函数以适应获取不同类型值的配置
+	// 不重载直接用上面那个也可以, 不过如果需要int类型的话还需要stoi转换一下
+	UtilsError GetConfigValue(int& iValue, string strKey, string strSection ="CONFIG");
+
+
+
 	/*
 	 * @brief       获取当前时间(毫秒)
 	 * @return      __int64				time_t
 	 */
 	time_t GetCurrentTimsMS();
+
+
+	/*
+	 * @brief       发http请求
+	 * @param[in]   iPort			端口
+	 * @param[in]   iTimeout		超时时间		
+	 * @param[in]	pData			数据
+	 * @param[in]	pUrl			http地址
+	 * @param[in]	strResp			收到的数据
+	 * @return      UtilsError		错误码
+	 */
+	UtilsError DoPost(int iPost, int iTimeout, char * pData, char* pUrl, string &strResp);
+
+	// UtilsError DoPost(const char* pAgent, int iPost, int iTimeout, const char* cookieFilePath, char * pData, char* pUrl, string &strResp);
+	// UtilsError DoPost(int iPost, int iTimeout, const char* cookieFilePath, char * pData, char* pUrl, string &strResp);
+
 
 
 private:

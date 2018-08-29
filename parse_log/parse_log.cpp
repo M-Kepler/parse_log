@@ -6,6 +6,7 @@
 #include "utils.h"
 #include "log.h"
 #include <curl/curl.h>
+#include "mylibcurl.h"
 
 using namespace std;
 
@@ -15,12 +16,14 @@ const char* filepath = "runlog_config.ini";
 const char* filename = "runlog0-3.1.log";
 
 
+
 int main(int argv, char* argc[])
 {
 	bool step = 0;
 	streamsize loadsize = 250000;
 	loadedFile2[0] = new char[loadsize];
 	loadedFile2[1] = new char[loadsize];
+	UtilsError utileError;
 
 	// 读取文件
 	CUtils clUtils;
@@ -157,28 +160,71 @@ int main(int argv, char* argc[])
 
 
 	// libcurl
-
+	// curl 初始化
+	/*
 	CURL *curl = nullptr;
 	CURLcode res;
+	// 得到 easy interface 型指针
 	curl = curl_easy_init();
 	if (curl != nullptr)
 	{
+		// curl_easy_setopt 设置传输选项
 		curl_easy_setopt(curl, CURLOPT_URL, "http://www.baidu.com");
-		// example.com is redirected, so we tell libcurl to follow redirection 
+		// example.com is redirected, so we tell libcurl to follow redirection
 		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-		// Perform the request, res will get the return code 
+		// Perform the request, res will get the return code
+
+		// 完成传输任务
 		res = curl_easy_perform(curl);
-		// Check for errors
 		if (res != CURLE_OK)
 		{
 			fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
 		}
-		// always cleanup 
+		// 释放内存
 		curl_easy_cleanup(curl);
+	}
+	*/
+
+	string strRespData;
+	string strPort;
+	string strTimeOut;
+	string strHttpUrl; // http 地址
+	string strHttpHeader; // http 请求头
+	string strHttpRepeatNum; // 超时重发次数
+	string strHttpTimeOut; // 超时时间
+	UtilsError enumUtilsError;
+
+	if ((enumUtilsError = clUtils.GetConfigValue(strHttpUrl, "HttpUrl", "CURL")) != UTILS_RTMSG_OK
+		|| (enumUtilsError = clUtils.GetConfigValue(strPort, "HttpPort", "CURL")) != UTILS_RTMSG_OK
+		|| (enumUtilsError = clUtils.GetConfigValue(strTimeOut, "HttpTimeOut", "CURL")) != UTILS_RTMSG_OK
+		|| (enumUtilsError = clUtils.GetConfigValue(strHttpHeader, "HttpHeader", "CURL")) != UTILS_RTMSG_OK
+		|| (enumUtilsError = clUtils.GetConfigValue(strHttpRepeatNum, "HttpRepeatNum", "CURL")) != UTILS_RTMSG_OK
+		)
+	{
+		LOG(ERROR) << "获取配置失败, 错误码: " << enumUtilsError << endl;
+		// FIXME
+		// 异常抛出到界面
+		abort();
+	}
+
+
+	string strResp;
+	// clUtils.DoPost(int iPost, int iTimeout, const char* cookieFilePath, char * pData, char* pUrl, string &strResp);
+	char *pData = NULL;
+	char *pUrl = (char*)strHttpUrl.c_str();
+	int iPort = stoi(strPort);
+	int iTimeOut = stoi(strTimeOut);
+	pData = (char*)"username=870131615@qq.com&password=159357yp";
+	// pData = (char*)"maintype=10001&subtype=100&appver=2.5.19.3753&sysver=Microsoft Windows 7&applist=100:15,200:2&sign=2553d888bc922275eca2fc539a5f0c1b";
+
+	// utileError = clUtils.DoPost(iPort, iTimeOut, pData, pUrl, strResp);
+	utileError = clUtils.DoPost(80, 1000, pData, pUrl, strResp);
+	if (UTILS_RTMSG_OK == utileError)
+	{
+		cout << "发post成功" << endl << "收到回复数据为:\n" << strResp << endl;
 	}
 
 	// multi_thread();
-
 	delete loadedFile2[0];
 	delete loadedFile2[1];
 	system("pause");

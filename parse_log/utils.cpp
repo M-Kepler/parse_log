@@ -155,6 +155,26 @@ UtilsError CUtils::GetConfigValue(string & strValue, string strKey, string strSe
 }
 
 
+UtilsError CUtils::GetConfigValue(int& iValue, string strKey, string strSection)
+{
+	int iRetCode;
+	IniFile ini;
+	char * configpath = GetConfigPath();
+	iRetCode = ini.load(configpath);
+	if (iRetCode != RET_OK)
+	{
+		return UTILS_FILE_ERROR;
+	}
+	iRetCode = ini.getIntValue(strSection, strKey, iValue);
+	if (iRetCode != RET_OK)
+	{
+		return UTILS_GET_INI_ERROR;
+	}
+	return UTILS_RTMSG_OK;
+}
+
+
+
 time_t CUtils::GetCurrentTimsMS()
 {
 	time_t currTime;
@@ -162,3 +182,51 @@ time_t CUtils::GetCurrentTimsMS()
 	return currTime * 1000 + clock();
 }
 
+// UtilsError CUtils::DoPost(int iPort, int iTimeout, const char* cookieFilePath, char * pData,char* pHttpUrl, string &strResp)
+UtilsError CUtils::DoPost(int iPort, int iTimeout, char * pData, char* pHttpUrl, string &strResp)
+{
+	string name;
+	string value;
+	CLibcurl libcurl;
+	unsigned int uiPosKey;
+	string strHttpHeader;
+	UtilsError enumError;
+	CURLcode curlErrorCode;
+
+	libcurl.SetUserAgent("Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.86 Safari/537.36");
+	libcurl.SetHttpPort(iPort);
+	libcurl.SetConnectTimeout(iTimeout);
+	enumError = GetConfigValue(strHttpHeader, "HttpHeader", "CURL");
+
+	if (enumError != UTILS_RTMSG_OK)
+	{
+		return enumError;
+	}
+	else
+	{
+		uiPosKey = strHttpHeader.find(":");
+		if (uiPosKey != string::npos)
+		{
+			name = strHttpHeader.substr(1, uiPosKey);
+			value = strHttpHeader.substr(uiPosKey + 1, strHttpHeader.length()-1);
+			libcurl.AddHeader(name.c_str(), value.c_str());
+		}
+		/*
+		char* name2 = (char*) "Content-Typ";
+		char* value2 = (char*) "application/x-www-form-urlencoded;charset=UTF-8";
+		libcurl.AddHeader(name2, value2);
+		*/
+	}
+	// char* pData = (char*)"maintype=10001&subtype=100&appver=2.5.19.3753&sysver=Microsoft Windows 7&applist=100:15,200:2&sign=2553d888bc922275eca2fc539a5f0c1b";
+	curlErrorCode = libcurl.Post(pHttpUrl, pData);
+	if (CURLE_OK != curlErrorCode)
+	{
+		return UTILS_URL_ERROR;
+		LOG(ERROR) << "发送Post请求失败, 错误码: " << curlErrorCode << "\t 发送的数据为: " << &pData << endl;
+	}
+	else
+	{
+		strResp = libcurl.GetRespons();
+		return UTILS_RTMSG_OK;
+	}
+}

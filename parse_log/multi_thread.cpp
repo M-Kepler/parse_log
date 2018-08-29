@@ -29,10 +29,12 @@ int multi_thread()
 	streamsize llMaxSize;
 	string strLoadSize;
 	UtilsError enumUtilsError;
-	string strThreadCount; //xxx
+	string strThreadCount;
 	int iThreadCount;
 	streamsize llLoadSize;
 	int iLineBuffer;
+
+	// enumUtilsError = clUtils.GetConfigValue(iLineBuffer, "LoadSize");
 
 	if ((enumUtilsError = clUtils.GetConfigValue(strLoadSize, "LoadSize")) != UTILS_RTMSG_OK
 		|| (enumUtilsError = clUtils.GetConfigValue(strThreadCount, "ThreadCount")) != UTILS_RTMSG_OK

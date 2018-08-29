@@ -10,6 +10,12 @@
 #include <string>
 #include "inifile.h"
 
+#ifdef _DEBUG
+#pragma comment(lib, "glogd")
+#else
+#pragma comment(lib, "glog")
+#endif
+
 using namespace std;
 using namespace inifile;
 
