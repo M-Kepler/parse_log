@@ -24,12 +24,14 @@ class CGlog
 private:
 	CGlog()
 	{
+		cout << "init glog" << endl;
 		InitGlog();
 	};
 	CGlog(const CGlog&) = delete;
 	CGlog& operator= (const CGlog &) = delete;
 	~CGlog()
 	{
+		cout << "close glog" << endl;
 		CloseGlog();
 	};
 

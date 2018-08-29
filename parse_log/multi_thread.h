@@ -90,8 +90,8 @@ streamsize inline getBlockSize(int iStep, streamoff llStart, streamsize llSize);
 
 
 /*
-* @brief		处理vector中的日志行
-* @param[in]	vecStr			缓存 Buffer 的下标
+* @brief		把vector中的日志行插入到map中
+* @param[in]	vecStr			vector
 * @param[in]	strKey			从串中指定用哪个的hash值作为Key
 * @return		无
 */

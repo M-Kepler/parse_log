@@ -20,9 +20,9 @@ using namespace inifile;
 enum UtilsError
 {
 	UTILS_RTMSG_OK = 000000,
-	UTILS_INI_FILE_ERROR = 000001,
 	UTILS_OPEN_SUCCESS = 100000,
-	UTILS_FILE_NOT_FOUND = 100001,
+	UTILS_GET_INI_ERROR = 100001,   // 获取配置文件值出错
+	UTILS_FILE_ERROR = 100001,
 	UTILS_DATE_EMPTY = 600001,       // 数据为空　　
 	UTILS_DOC_FAILED = 600004,       // 序列化失败
 };
@@ -35,11 +35,6 @@ public:
 	~CUtils();
 
 public:
-
-	// UtilsError InitGlog(char* argv[]);
-	// static UtilsError InitGlog(const char*);
-	// void ShutdownGlog();
-
 
 	/*
 	 * @brief       加载文件
@@ -57,7 +52,6 @@ public:
 	 * @param[in]  strSplit			从key开始出现的第一个截取结束符;
 	 * @return	   strRetValue		查找成功返回value,查找失败返回空字符串; 若从key开始到字符串结束没有找到str_split, 则返回key开始到字符串结束
 	 */
-	//TODO		   针对不同的日志格式,重载该方法
 	string GetMsgValue(string strOrig, string strKey, string strSplit = ",");
 
 
@@ -82,18 +76,32 @@ public:
 
 
 	/*
-	 * @brief       获取配置
-	 * @param[in]   section			节点[]
-	 * @param[in]   key				键值
-	 * @return      value			对应的值
+	 * @brief       获取配置文件路径
+	 * @return      char*			文件路径
 	 */
-	string GetConfigValue(string section, string key);
+	char * GetConfigPath();
+
+
+	/*
+	 * @brief       获取配置
+	 * @param[in]	strValue			对应的值的引用
+	 * @param[in]   strKey				键值
+	 * @param[in]   strSection			节点, 默认[CONFIG]
+	 * @return      strValue			对应的值
+	 */
+	UtilsError GetConfigValue(string & strValue, string strKey, string strSection="CONFIG");
+
+
+	/*
+	 * @brief       获取当前时间(毫秒)
+	 * @return      __int64				time_t
+	 */
+	time_t GetCurrentTimsMS();
 
 
 private:
-	// IniFile clIniFile;
 	UtilsError _errorCode;
-	// char* ConfigPath = (char*)"./runlog_config.ini";
+	char* ConfigPath = (char*)"./runlog_config.ini";
 	int _errorLineNum;
 	string _errorStr;
 };

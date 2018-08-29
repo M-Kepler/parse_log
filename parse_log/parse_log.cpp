@@ -5,6 +5,8 @@
 #include "multi_thread.h"
 #include "utils.h"
 #include "log.h"
+#include <curl/curl.h>
+
 using namespace std;
 
 
@@ -34,24 +36,21 @@ int main(int argv, char* argc[])
 	string str_ans = "20180719-094803-110762 12343    98 Ans: LBM=L1160005, MsgId=000001050001D55B1F297DD2, Len=792, Cost=161, Buf=&_1=0, 0, 业务程序运行正常, &_2=13863, 2, 21, 开户权限组<营业部>, 0, 10012, 2011-07-11 17:12:43.299541";
 
 	/* 解析配置文件 */
-
-	/*
-	IniFile ini;
-	ini.load(filepath);
-	string Key_ScanTime = "ScanTime";
-	string Value_ScanTime;
-	string Section = "CONFIG"
-	ini.getValue(Section, Key_ScanTime, Value_ScanTime);
-	cout << Key_ScanTime <<": " << Value_ScanTime << endl;
-	*/
-
+	string strValue;
+	if (UTILS_RTMSG_OK != clUtils.GetConfigValue(strValue, "ThreadCount"))
+	{
+		LOG(ERROR) << "获取配置文件值出错" << endl;
+	};
 
 	/* 获取msg中key的value */
-
 	/*
-	const char* key_lbm = "LBM";
+	const char* key_lbm = "LBMa";
 	const char* str_split = ",";
-	string key_lbm_value = GetMsgValue(str_req, key_lbm, str_split);
+	string key_lbm_value = clUtils.GetMsgValue(str_req, key_lbm);
+	if (key_lbm_value.empty())
+	{
+		cout << "没找到" << endl;
+	}
 	if (key_lbm_value != "")
 	{
 		cout << key_lbm << ": " << key_lbm_value << endl;
@@ -60,18 +59,18 @@ int main(int argv, char* argc[])
 
 
 	/* 时间处理 */
-	extern CGlog *p_glog;
-
+	/*
+	CGlog *p_glog = CGlog::GetInstance();
 	if (clUtils.bCheckDate(str_req, 0, 15))
 	{
-		LOG(INFO) << "打印日志";        // 像C++标准流一样去使用就可以了，把这条信息定义为INFO级别
+		LOG(INFO) << "打印日志";
 		cout << str_req.substr(0, 15) << " 转换为毫秒: " << clUtils.StringToMs(str_req, 0, 15) << endl;
 	}
 	else
 	{
 		cout << "非正常日期时间" << endl;
 	}
-
+	*/
 
 	/* 按行读入vector */
 	/*
@@ -152,13 +151,37 @@ int main(int argv, char* argc[])
 	}
 	*/
 
+
+	// 获取当前时间
+	cout << "当前时间(毫秒): " << clUtils.GetCurrentTimsMS() << endl;
+
+
+	// libcurl
+
+	CURL *curl = nullptr;
+	CURLcode res;
+	curl = curl_easy_init();
+	if (curl != nullptr)
+	{
+		curl_easy_setopt(curl, CURLOPT_URL, "http://www.baidu.com");
+		// example.com is redirected, so we tell libcurl to follow redirection 
+		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+		// Perform the request, res will get the return code 
+		res = curl_easy_perform(curl);
+		// Check for errors
+		if (res != CURLE_OK)
+		{
+			fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+		}
+		// always cleanup 
+		curl_easy_cleanup(curl);
+	}
+
 	// multi_thread();
-	
 
 	delete loadedFile2[0];
 	delete loadedFile2[1];
 	system("pause");
-	// p_glog->CloseGlog();
 	return 0;
 }
 

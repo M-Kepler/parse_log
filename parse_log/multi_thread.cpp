@@ -11,17 +11,6 @@
 #include "utils.h"
 
 
-// TODO
-// 把所有需要从配置文件获取的变量分装到Init中
-
-// XXX 配置
-const int iThreadCount = 4;
-
-// XXX 配置
-// assert 这个值无论怎么调, 都不应该影响实际结果的
-// 1M = 1024 * 1024 比特
-
-streamsize llLoadSize = 8000;
 char* loadedFile[2]; // 存放指向 char* 类型的指针的数组
 typedef unordered_multimap<string, string> LogMap;
 typedef unordered_multimap<string, string>::iterator LogMapKeySet;
@@ -36,16 +25,36 @@ vector<string> vecThreadLines, vecEndThreadLines;
 
 int multi_thread()
 {
+	string strLineBuffer;
+	streamsize llMaxSize;
+	string strLoadSize;
+	UtilsError enumUtilsError;
+	string strThreadCount; //xxx
+	int iThreadCount;
+	streamsize llLoadSize;
+	int iLineBuffer;
+
+	if ((enumUtilsError = clUtils.GetConfigValue(strLoadSize, "LoadSize")) != UTILS_RTMSG_OK
+		|| (enumUtilsError = clUtils.GetConfigValue(strThreadCount, "ThreadCount")) != UTILS_RTMSG_OK
+		|| (enumUtilsError = clUtils.GetConfigValue(strLineBuffer, "LineBuffer")) != UTILS_RTMSG_OK
+		)
+	{
+		LOG(ERROR) << "获取配置失败, 错误码: " << enumUtilsError << endl;
+		// FIXME
+		// 异常抛出到界面
+		abort();
+	}
+	iThreadCount = stoi(strThreadCount);
+	llLoadSize = stoll(strLoadSize);
+	iLineBuffer = stoi(strLineBuffer);
 
 	const char* filename = "runlog0-3.1.log";
 	ios::sync_with_stdio(false);
 	pLogMaps = new LogMap[iThreadCount];
 
 	// 双缓冲
-	// XXX 配置
-	// 配置防溢出的大小
-	// 导致 delete loadedFile[1] 出错的问题在这里,这个512是为了防止阶段所以多设置出来的一段空间
-	streamsize llMaxSize = llLoadSize + 512;
+	llMaxSize = llLoadSize + iLineBuffer;
+	
 	loadedFile[0] = new char[llMaxSize];
 	loadedFile[1] = new char[llMaxSize];
 
@@ -55,15 +64,6 @@ int multi_thread()
 
 	// 读取文件
 	ifstream file;
-	/*
-	file.open(filename, ios::binary | ios::in);
-
-	if (!file)
-	{
-		cout << "Error: File \"" << filename << "\" do not exist!" << endl;
-		exit(1);
-	}
-	*/
 	UtilsError errCode = clUtils.LoadFile(file, filename);
 	if (UTILS_OPEN_SUCCESS != errCode)
 	{
@@ -74,7 +74,7 @@ int multi_thread()
 		/* 确认文件大小 bytes */
 		streamoff llStart = 0;
 		streamoff llFileSize; // 文件大小
-		file.seekg(0, ios::end);
+		file.seekg(0, ios::end); // 文件指针指到文件末尾
 		streamoff llFileLen = file.tellg();
 		streamoff llThreadIndex, llThreadPart;
 		streamsize llRealSize; // 实际读入大小(因为可能遇到需要的单词被截位)
@@ -106,7 +106,7 @@ int multi_thread()
 
 		while (llFileSize)
 		{
-			llRealSize = llFileSize > llMaxSize ? getRealSize(&file, llStart, llLoadSize) : llFileSize;
+			llRealSize = llFileSize > llMaxSize ? getRealSize(&file, llStart, stoi(strLoadSize)) : llFileSize;
 			llThreadIndex = 0;
 			llThreadPart = llRealSize / iThreadCount;
 
@@ -188,7 +188,6 @@ int multi_thread()
 				allLogMap.insert(pair<string, string>(p->first, p->second));
 			}
 		}
-
 	}
 	TimeoutScan(allLogMap);
 	t_end = clock();
@@ -270,31 +269,31 @@ vector<string> ReadLineToVec(int iStep, streamoff llStart, streamsize llSize)
 }
 
 
-// TODO
-// 对于一个请求分割多行的情况, 可否通过重载这个函数来实现, 判断行的开始和结束，并从日志行中提取需要的撞到map中
 void ParseMsgLine( vector<string> vecStr, int id, string strKey)
 {
 	string MsgId;
 	LogMap *map = pLogMaps + id;
 
-	LOG(INFO) << "id: " << id << "\tstrKey: " << strKey << endl;
+	// FIXME
+	// 加上这句后, 偶现超时的输出有问题
+	// LOG(INFO) << "id: " << id << "\tstrKey: " << strKey << endl;
 	auto end = map->end();
 	if (!vecStr.empty())
 	{
-		// 如果日志行中没有MsgId呢?
 		for (string::size_type i = 0; i < vecStr.size(); ++i)
 		{
 			MsgId = clUtils.GetMsgValue(vecStr[i], strKey);
 			if (MsgId.empty())
 			{
 				// TODO
-				// 对于非LBM req 和 ans 的日志行
+				// ORA错误
+				// 对于一个请求分割多行的情况, 可否通过重载这个函数来实现, 判断行的开始和结束，并从日志行中提取需要的撞到map中
+				// 如果日志行中没有MsgId呢?
 			}
 			else
 			{
 				map->insert(pair<string, string>(MsgId, vecStr[i]));
 			}
-
 		}
 	}
 }
@@ -306,13 +305,13 @@ void ParseMsgLine( vector<string> vecStr, int id, string strKey)
 // 扫描的时候是否需要考虑线程同步
 void TimeoutScan(unordered_multimap<string, string> mymap)
 {
-	// 遍历map, 对桶元素数量小于2的，认为缺失req或ans
+	// 遍历map, 对指定键的元素数小于2的，认为缺失req或ans
 	auto begin = mymap.begin();
 	for (; begin != mymap.end(); begin++)
 	{
 		if (mymap.count(begin->first) < 2)
 		{
-			cout << "\n缺失应答串的MsgId： \t" << clUtils.GetMsgValue(begin->second, "MsgId") << endl << endl; // debug
+			cout << "\n缺失应答串的MsgId： \t" << clUtils.GetMsgValue(begin->second, "MsgId") << endl; // debug
 		}
 	}
 }

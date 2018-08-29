@@ -5,18 +5,23 @@
 
 ## FIXME
 
+[ ] 我的异常应该怎么定义和抛出?
+[ ] 文件持续写入、multi_thread需要重构封装到类
+[ ] 超时扫描的优化
 
 ## TODO
 
-1. HTTP
-2. 一个请求分割多行的情况
-3. 文件在实时增长
-4. KCXP的日志? 三方网关的日志?
+[ ] MFC 前端界面
+[ ] HTTP
+[ ] 一个请求分割多行的情况
+[ ] 文件在实时增长
+[ ] KCXP的日志? 三方网关的日志?
 
 
 ## XXX
 
-1. 组合 iThreadCount 后再扫, 改为插入的时候就进行判断
+[ ] 组合 iThreadCount 后再扫, 改为插入的时候就进行判断
+
 
 
 # 第三方库
@@ -37,6 +42,22 @@
 4. 配置属性-->链接器-->常规-->附加库目录-->添加<glog安装路径>/lib
 5. 配置属性-->链接器-->输入-->附加依赖项-->添加glogd.lib（如果你的程序是Release版本就写glog.lib）
 ```
+
+## libcurl
+
+* [Visual Studio(VS2017)编译并配置C/C++-libcurl开发环境](https://blog.csdn.net/DaSo_CSDN/article/details/77587916)
+  * 编译命令后面加上 `ENABLE_IDN=no`
+* libcurl 文件夹是编译后的文件,
+```
+1. 右键项目属性
+2. 配置属性 --> C/C++ --> 常规-->附加包含目录 --> 添加 <curl路径>/include
+3. Release模式配置: 配置属性 --> C/C++ --> 代码生成 --> 运行库 --> 多线程DLL(/MD)
+4. 配置属性 --> 链接器 --> 常规 --> 附加库目录 --> 添加 <curl安装路径>/lib
+5. 配置属性 --> 链接器 --> 输入 --> 附加依赖项 --> 添加 libcurl_a_debug.lib;Ws2_32.lib;Wldap32.lib;winmm.lib;Crypt32.lib
+   如果你的程序是Release版本就写 libcurl_a.lib
+6. 配置属性 --> C/C++ --> 预处理器 --> 预处理器定义 --> 编辑框中添加: CURL_STATICLIB 
+
+
 
 
 ## Q&A

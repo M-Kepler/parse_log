@@ -2,7 +2,7 @@
 
 
 // glog 单例
-CGlog *p_glog = CGlog::GetInstance();
+// CGlog *p_glog = CGlog::GetInstance();
 
 
 CUtils::CUtils()
@@ -17,14 +17,13 @@ CUtils::~CUtils()
 
 UtilsError CUtils::LoadFile(ifstream &file, const char* filename)
 {
-	// ifstream file;
 	file.open(filename, ios::binary | ios::in);
 
 	if (!file)
 	{
 		// 打印日志
-		LOG(INFO) <<  "Error: File \"" << filename << "\" do not exist!" << endl;
-		return UTILS_FILE_NOT_FOUND;
+		LOG(ERROR) <<  "Error: File \"" << filename << "\" do not exist!" << endl;
+		return UTILS_FILE_ERROR;
 	}
 	else
 	{
@@ -77,7 +76,6 @@ time_t CUtils::StringToMs(string strOrig, int iStart, int iEnd)
 	int len = iEnd - iStart;
 
 	formate = (char*)"%4d%2d%2d-%2d%2d%2d";
-	// str = strOrig.substr(0, 15);
 	str = strOrig.substr(iStart, len);
 	sscanf_s(str.c_str(), formate, &year, &month, &day, &hour, &minute, &second);
 
@@ -88,10 +86,18 @@ time_t CUtils::StringToMs(string strOrig, int iStart, int iEnd)
 	tm_.tm_min = minute;
 	tm_.tm_sec = second;
 	tm_.tm_isdst = 0;
-
 	time_t tm_s = mktime(&tm_);
-	time_t tm_ms = (tm_s * 1000) + stoi(strOrig.substr(iEnd + 1, 3)); // 转化为毫秒
-	return tm_ms;
+	if (strOrig.length() <= 15)
+	{
+		time_t tm_ms = tm_s * 1000;
+		return tm_ms;
+	} 
+	else
+	{
+		// 20180202-091002-549327 取547为毫秒
+		time_t tm_ms = (tm_s * 1000) + stoi(strOrig.substr(iEnd + 1, 3)); // 转化为毫秒
+		return tm_ms;
+	}
 }
 
 
@@ -124,8 +130,35 @@ bool CUtils::bCheckDate(string strOrig, int iStart, int iEnd)
 }
 
 
-string CUtils::GetConfigValue(string section, string key)
+char * CUtils::GetConfigPath()
 {
-	return string();
+	return ConfigPath;
+}
+
+
+UtilsError CUtils::GetConfigValue(string & strValue, string strKey, string strSection)
+{
+	int iRetCode;
+	IniFile ini;
+	char * configpath = GetConfigPath();
+	iRetCode = ini.load(configpath);
+	if (iRetCode != RET_OK)
+	{
+		return UTILS_FILE_ERROR;
+	}
+	iRetCode = ini.getValue(strSection, strKey, strValue);
+	if (iRetCode != RET_OK)
+	{
+		return UTILS_GET_INI_ERROR;
+	}
+	return UTILS_RTMSG_OK;
+}
+
+
+time_t CUtils::GetCurrentTimsMS()
+{
+	time_t currTime;
+	currTime = time(NULL);
+	return currTime * 1000 + clock();
 }
 
