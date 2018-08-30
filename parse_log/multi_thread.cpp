@@ -1,10 +1,10 @@
 /*
- * 程序第一次开始运行时, 已存在的日志内容不需要读取; 
+ * 程序第一次开始运行时, 已存在的日志内容不需要读取;
  * 所以如果开始运行时, 已存在的日志中最后一行是ans串,则应该丢弃掉该行
  *
  * 操作员登录的时候有一条是请求所有菜单时, 返回的串长度是很长很长的
  *
- * 还没试过日志不断增长的情况 
+ * 还没试过日志不断增长的情况
  *
 */
 #include "multi_thread.h"
@@ -19,29 +19,30 @@ LogMap *pLogMaps;
 LogMap allLogMap;
 
 CUtils clUtils;
+UtilsError utilsError;
 
+string strResponse;
 vector<string> vecThreadLines, vecEndThreadLines;
 
 
 int multi_thread()
 {
-	string strLineBuffer;
-	streamsize llMaxSize;
-	string strLoadSize;
-	UtilsError enumUtilsError;
-	string strThreadCount;
 	int iThreadCount;
-	streamsize llLoadSize;
 	int iLineBuffer;
+	string strLineBuffer;
+	string strLoadSize;
+	string strThreadCount;
+	streamsize llLoadSize;
+	streamsize llMaxSize;
 
 	// enumUtilsError = clUtils.GetConfigValue(iLineBuffer, "LoadSize");
 
-	if ((enumUtilsError = clUtils.GetConfigValue(strLoadSize, "LoadSize")) != UTILS_RTMSG_OK
-		|| (enumUtilsError = clUtils.GetConfigValue(strThreadCount, "ThreadCount")) != UTILS_RTMSG_OK
-		|| (enumUtilsError = clUtils.GetConfigValue(strLineBuffer, "LineBuffer")) != UTILS_RTMSG_OK
+	if ((utilsError = clUtils.GetConfigValue(strLoadSize, "LoadSize")) != UTILS_RTMSG_OK
+		|| (utilsError = clUtils.GetConfigValue(strThreadCount, "ThreadCount")) != UTILS_RTMSG_OK
+		|| (utilsError = clUtils.GetConfigValue(strLineBuffer, "LineBuffer")) != UTILS_RTMSG_OK
 		)
 	{
-		LOG(ERROR) << "获取配置失败, 错误码: " << enumUtilsError << endl;
+		LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
 		// FIXME
 		// 异常抛出到界面
 		abort();
@@ -56,7 +57,7 @@ int multi_thread()
 
 	// 双缓冲
 	llMaxSize = llLoadSize + iLineBuffer;
-	
+
 	loadedFile[0] = new char[llMaxSize];
 	loadedFile[1] = new char[llMaxSize];
 
@@ -66,10 +67,10 @@ int multi_thread()
 
 	// 读取文件
 	ifstream file;
-	UtilsError errCode = clUtils.LoadFile(file, filename);
-	if (UTILS_OPEN_SUCCESS != errCode)
+	utilsError = clUtils.LoadFile(file, filename);
+	if (UTILS_OPEN_SUCCESS != utilsError)
 	{
-		return errCode;
+		return utilsError;
 	}
 	else
 	{
@@ -121,7 +122,6 @@ int multi_thread()
 			llStart += llRealSize;
 			llFileSize -= llRealSize;
 
-
 			/* 阻塞主线程,等待上一个数据块分析结束,再对下一数据块进行分析*/
 			if (bNeedWait)
 			{
@@ -164,7 +164,7 @@ int multi_thread()
 			if ((llRealSize - llThreadIndex) > 70)
 			{
 				vecEndThreadLines = ReadLineToVec(bBufferIndex, llThreadIndex, llRealSize - llThreadIndex);
-				threads[0] = thread(ParseMsgLine, vecEndThreadLines, 0,"MsgId");
+				threads[0] = thread(ParseMsgLine, vecEndThreadLines, 0, "MsgId");
 				cout << "线程 4 " << "共读入: " << vecEndThreadLines.size() << "行" << endl; // debug
 			}
 
@@ -255,12 +255,19 @@ vector<string> ReadLineToVec(int iStep, streamoff llStart, streamsize llSize)
 	char *strToken = NULL;
 	char *nextToken = NULL;
 
+#ifdef WINDOWS
 	strToken = strtok_s(pLineBuffer, strDelim, &nextToken);
+#else
+
+#endif
 	while (strToken != NULL)
 	{
 		sLine.assign(strToken);
 		vecStringLine.push_back(sLine);
+#ifdef WINDOWS
 		strToken = strtok_s(NULL, strDelim, &nextToken);
+#else
+#endif
 	}
 	/*
 	cout << vecStringLine[0] << endl; // debug
@@ -271,7 +278,7 @@ vector<string> ReadLineToVec(int iStep, streamoff llStart, streamsize llSize)
 }
 
 
-void ParseMsgLine( vector<string> vecStr, int id, string strKey)
+void ParseMsgLine(vector<string> vecStr, int id, string strKey)
 {
 	string MsgId;
 	LogMap *map = pLogMaps + id;
@@ -313,9 +320,23 @@ void TimeoutScan(unordered_multimap<string, string> mymap)
 	{
 		if (mymap.count(begin->first) < 2)
 		{
-			cout << "\n缺失应答串的MsgId： \t" << clUtils.GetMsgValue(begin->second, "MsgId") << endl; // debug
+			// XXX
+			char* pMsgData = (char*)begin->second.c_str();
+			utilsError = clUtils.DoPost(pMsgData, strResponse);
+			if (UTILS_RTMSG_OK != utilsError)
+			{
+				LOG(ERROR) << "发送POST请求失败! 错误码: " << utilsError << endl;
+			}
+			else
+			{
+				cout << "\n缺失应答串的MsgId： \t" << clUtils.GetMsgValue(begin->second, "MsgId") << endl; // debug
+				LOG(INFO) << "\n==========================================发POST请求成功! " << "===========================================" << endl;
+				LOG(INFO) << "\n==========================================发送的数据为:   " << "===========================================" << endl;
+				LOG(INFO) << pMsgData << endl;
+				LOG(INFO) << "\n==========================================收到的回复为:   " << "===========================================" << endl;
+				LOG(INFO) << strResponse << endl;
+				LOG(INFO) << "\n==========================================================================================================" << endl;
+			}
 		}
 	}
 }
-
-

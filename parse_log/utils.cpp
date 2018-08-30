@@ -77,7 +77,8 @@ time_t CUtils::StringToMs(string strOrig, int iStart, int iEnd)
 
 	formate = (char*)"%4d%2d%2d-%2d%2d%2d";
 	str = strOrig.substr(iStart, len);
-	sscanf_s(str.c_str(), formate, &year, &month, &day, &hour, &minute, &second);
+	// sscanf_s(str.c_str(), formate, &year, &month, &day, &hour, &minute, &second);
+	sscanf(str.c_str(), formate, &year, &month, &day, &hour, &minute, &second);
 
 	tm_.tm_year = year - 1900;
 	tm_.tm_mon = month - 1;
@@ -174,36 +175,56 @@ UtilsError CUtils::GetConfigValue(int& iValue, string strKey, string strSection)
 }
 
 
-
-time_t CUtils::GetCurrentTimsMS()
+time_t CUtils::GetCurrentTimeMs()
 {
 	time_t currTime;
 	currTime = time(NULL);
 	return currTime * 1000 + clock();
 }
 
-// UtilsError CUtils::DoPost(int iPort, int iTimeout, const char* cookieFilePath, char * pData,char* pHttpUrl, string &strResp)
-UtilsError CUtils::DoPost(int iPort, int iTimeout, char * pData, char* pHttpUrl, string &strResp)
+
+// UtilsError CUtils::DoPost(int iPort, int iTimeout, char * pData, char* pHttpUrl, string &strResp)
+UtilsError CUtils::DoPost(char * pData, string &strResp)
 {
 	string name;
 	string value;
 	CLibcurl libcurl;
 	unsigned int uiPosKey;
-	string strHttpHeader;
 	UtilsError enumError;
 	CURLcode curlErrorCode;
 
-	libcurl.SetUserAgent("Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.86 Safari/537.36");
-	libcurl.SetHttpPort(iPort);
-	libcurl.SetConnectTimeout(iTimeout);
-	enumError = GetConfigValue(strHttpHeader, "HttpHeader", "CURL");
+	char* pUrl;
+	int iPort;
+	int iTimeOut;
+	string strPort;
+	string strTimeOut;
+	string strHttpUrl; // http 地址
+	string strHttpHeader; // http 请求头
+	string strHttpRepeatNum; // 超时重发次数
+	string strHttpTimeOut; // 超时时间
+	UtilsError utilsError;
 
-	if (enumError != UTILS_RTMSG_OK)
+	if ((utilsError = GetConfigValue(strHttpUrl, "HttpUrl", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = GetConfigValue(strPort, "HttpPort", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = GetConfigValue(strTimeOut, "HttpTimeOut", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = GetConfigValue(strHttpHeader, "HttpHeader", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = GetConfigValue(strHttpRepeatNum, "HttpRepeatNum", "CURL")) != UTILS_RTMSG_OK
+		)
 	{
-		return enumError;
+		LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
+		// FIXME // 异常抛出到界面
+		return utilsError;
 	}
 	else
 	{
+		pUrl = (char*)strHttpUrl.c_str();
+		iPort = stoi(strPort);
+		iTimeOut = stoi(strTimeOut);
+
+		libcurl.SetUserAgent("Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.86 Safari/537.36");
+		libcurl.SetHttpPort(iPort);
+		libcurl.SetConnectTimeout(iTimeOut);
+
 		uiPosKey = strHttpHeader.find(":");
 		if (uiPosKey != string::npos)
 		{
@@ -211,18 +232,12 @@ UtilsError CUtils::DoPost(int iPort, int iTimeout, char * pData, char* pHttpUrl,
 			value = strHttpHeader.substr(uiPosKey + 1, strHttpHeader.length()-1);
 			libcurl.AddHeader(name.c_str(), value.c_str());
 		}
-		/*
-		char* name2 = (char*) "Content-Typ";
-		char* value2 = (char*) "application/x-www-form-urlencoded;charset=UTF-8";
-		libcurl.AddHeader(name2, value2);
-		*/
 	}
-	// char* pData = (char*)"maintype=10001&subtype=100&appver=2.5.19.3753&sysver=Microsoft Windows 7&applist=100:15,200:2&sign=2553d888bc922275eca2fc539a5f0c1b";
-	curlErrorCode = libcurl.Post(pHttpUrl, pData);
+	curlErrorCode = libcurl.Post((char*)strHttpUrl.c_str(), pData);
+
 	if (CURLE_OK != curlErrorCode)
 	{
 		return UTILS_URL_ERROR;
-		LOG(ERROR) << "发送Post请求失败, 错误码: " << curlErrorCode << "\t 发送的数据为: " << &pData << endl;
 	}
 	else
 	{
@@ -230,3 +245,45 @@ UtilsError CUtils::DoPost(int iPort, int iTimeout, char * pData, char* pHttpUrl,
 		return UTILS_RTMSG_OK;
 	}
 }
+
+
+/*
+UtilsError CUtils::MsgPost(char* pData, string &strResp)
+{
+	char* pUrl;
+	int iPort;
+	int iTimeOut;
+	string strPort;
+	string strTimeOut;
+	string strHttpUrl; // http 地址
+	string strHttpHeader; // http 请求头
+	string strHttpRepeatNum; // 超时重发次数
+	string strHttpTimeOut; // 超时时间
+	UtilsError utilsError;
+
+	if ((utilsError = GetConfigValue(strHttpUrl, "HttpUrl", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = GetConfigValue(strPort, "HttpPort", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = GetConfigValue(strTimeOut, "HttpTimeOut", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = GetConfigValue(strHttpHeader, "HttpHeader", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = GetConfigValue(strHttpRepeatNum, "HttpRepeatNum", "CURL")) != UTILS_RTMSG_OK
+		)
+	{
+		LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
+		// FIXME // 异常抛出到界面
+		return utilsError;
+	}
+	else
+	{
+
+		pUrl = (char*)strHttpUrl.c_str();
+		iPort = stoi(strPort);
+		iTimeOut = stoi(strTimeOut);
+		// 发送数据的格式是:name=value&name2=value2&name3=value3";
+		// pData = (char*)"username=870131615@qq.com&password=159357yp";
+		utilsError = DoPost(iPort, iTimeOut, pData, pUrl, strResp);
+		return utilsError;
+	}
+}
+
+*/
+

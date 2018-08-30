@@ -11,11 +11,10 @@
 using namespace std;
 
 
+string strResp;
 char *loadedFile2[2];
 const char* filepath = "runlog_config.ini";
 const char* filename = "runlog0-3.1.log";
-
-
 
 int main(int argv, char* argc[])
 {
@@ -24,6 +23,8 @@ int main(int argv, char* argc[])
 	loadedFile2[0] = new char[loadsize];
 	loadedFile2[1] = new char[loadsize];
 	UtilsError utileError;
+
+	CGlog *p_glog = CGlog::GetInstance();
 
 	// 读取文件
 	CUtils clUtils;
@@ -63,7 +64,6 @@ int main(int argv, char* argc[])
 
 	/* 时间处理 */
 	/*
-	CGlog *p_glog = CGlog::GetInstance();
 	if (clUtils.bCheckDate(str_req, 0, 15))
 	{
 		LOG(INFO) << "打印日志";
@@ -156,9 +156,9 @@ int main(int argv, char* argc[])
 
 
 	// 获取当前时间
-	cout << "当前时间(毫秒): " << clUtils.GetCurrentTimsMS() << endl;
+	cout << "当前时间(毫秒): " << clUtils.GetCurrentTimeMs() << endl;
 
-
+	LOG(INFO) << "asdfasdfasdf" << endl;
 	// libcurl
 	// curl 初始化
 	/*
@@ -185,6 +185,8 @@ int main(int argv, char* argc[])
 	}
 	*/
 
+	// clUtils.DoPost
+	/*
 	string strRespData;
 	string strPort;
 	string strTimeOut;
@@ -208,23 +210,24 @@ int main(int argv, char* argc[])
 	}
 
 
-	string strResp;
 	// clUtils.DoPost(int iPost, int iTimeout, const char* cookieFilePath, char * pData, char* pUrl, string &strResp);
 	char *pData = NULL;
 	char *pUrl = (char*)strHttpUrl.c_str();
 	int iPort = stoi(strPort);
 	int iTimeOut = stoi(strTimeOut);
+	// 发送数据的格式是:name=value&name2=value2&name3=value3";
 	pData = (char*)"username=870131615@qq.com&password=159357yp";
 	// pData = (char*)"maintype=10001&subtype=100&appver=2.5.19.3753&sysver=Microsoft Windows 7&applist=100:15,200:2&sign=2553d888bc922275eca2fc539a5f0c1b";
 
-	// utileError = clUtils.DoPost(iPort, iTimeOut, pData, pUrl, strResp);
-	utileError = clUtils.DoPost(80, 1000, pData, pUrl, strResp);
+	utileError = clUtils.DoPost(iPort, iTimeOut, pData, pUrl, strResp);
 	if (UTILS_RTMSG_OK == utileError)
 	{
 		cout << "发post成功" << endl << "收到回复数据为:\n" << strResp << endl;
 	}
+	*/
 
-	// multi_thread();
+	multi_thread();
+
 	delete loadedFile2[0];
 	delete loadedFile2[1];
 	system("pause");

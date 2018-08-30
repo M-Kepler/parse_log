@@ -6,12 +6,15 @@
 #include <string>
 #include <cstring>
 #include <unordered_map>
+#include <vector>
 #include <time.h>
 #include <thread>
 
 using namespace std;
 
+#define WINDOWS
 
+/*
 // 为 char* 类型提供等价准则
 // 告知容器,当发生hash值冲突, 如何区分hash值相同的不同对象
 struct StrCmp
@@ -40,9 +43,9 @@ struct MsgIdHash
 	}
 };
 
-
 typedef unordered_map<char *, unsigned int, MsgIdHash, StrCmp> HashMap;
 typedef unordered_map<char *, unsigned int, MsgIdHash, StrCmp>::iterator KeySet;
+*/
 
 
 int multi_thread();

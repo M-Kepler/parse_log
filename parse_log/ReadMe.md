@@ -11,11 +11,15 @@
 
 ## TODO
 
-[ ] MFC 前端界面
-[ ] HTTP
+[*] **定时**扫描功能
+[*] 文件在实时增长
+	[*] 打算这样: 一次读取到文件尾,然后用现在的逻辑去分析到一个allmap中, 然后把文件尾指针当文件头指针, 再获取一次文件尾指针,如果两个指针不一致
+		说明文件有了增长, 再次把增长的文件放到现在的逻辑中去分析(或者设置定是时间, 定时时间一到就把这段文件拿去分析<这样确实没有刘欢的那个实时>)
+[*] MFC 前端界面
+[*] 而且每天一个文件夹, 也没有处理
 [ ] 一个请求分割多行的情况
-[ ] 文件在实时增长
 [ ] KCXP的日志? 三方网关的日志?
+[ ] HTTP
 
 
 ## XXX
@@ -29,7 +33,32 @@
 
 ## GLog
 
+### 编译安装
+
 * [glog下载和使用](https://blog.csdn.net/Pig_Pig_Bang/article/details/81632962)
+
+* [glog unix下编译使用](https://blog.csdn.net/csm201314/article/details/75094527)
+
+```
+1. 安装工具
+sudo apt-get install autoconf automake libtool
+
+2. 编译安装
+进入源码根目录（glog文件夹） 
+./autogen.sh 
+./configure --prefix=/path/to/install 
+make -j 24 
+sudo make install
+
+3. 设置环境变量
+修改$HOME/.bash_profile
+
+# parse_log
+export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:$HOME/parse/glog/unix/include
+export LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/parse/glog/unix
+
+```
+
 
 * glog文件夹是编译后的文件,
 当前是debug版本,需现在工程属性下配置一下
@@ -45,8 +74,22 @@
 
 ## libcurl
 
+### 编译安装
+
 * [Visual Studio(VS2017)编译并配置C/C++-libcurl开发环境](https://blog.csdn.net/DaSo_CSDN/article/details/77587916)
   * 编译命令后面加上 `ENABLE_IDN=no`
+
+* [unix下编译安装libcurl](https://blog.csdn.net/qianghaohao/article/details/51684862)
+
+./configure --prefix=/path/to/install 
+
+3. 设置环境变量
+修改$HOME/.bash_profile
+CPLUS_INCLUDE_PATH=/path/to/libcurl/include
+LIBRARY_PATH=/path/to/libcurl/lib
+
+```
+
 * libcurl 文件夹是编译后的文件,
 ```
 1. 右键项目属性

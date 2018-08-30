@@ -15,14 +15,6 @@
 using namespace std;
 using namespace inifile;
 
-// BXG::CLogger * g_pLogger = new BXG::CLogger(".\\log", "secu_callback");
-
-// URL 信息头
-struct URL
-{
-
-};
-
 
 enum UtilsError
 {
@@ -111,22 +103,30 @@ public:
 	 * @brief       获取当前时间(毫秒)
 	 * @return      __int64				time_t
 	 */
-	time_t GetCurrentTimsMS();
+	time_t GetCurrentTimeMs();
 
 
+	// FIXME
+	// 可能发生数据丢失的问题
 	/*
 	 * @brief       发http请求
-	 * @param[in]   iPort			端口
-	 * @param[in]   iTimeout		超时时间		
 	 * @param[in]	pData			数据
-	 * @param[in]	pUrl			http地址
 	 * @param[in]	strResp			收到的数据
 	 * @return      UtilsError		错误码
 	 */
-	UtilsError DoPost(int iPost, int iTimeout, char * pData, char* pUrl, string &strResp);
+	// UtilsError DoPost(int iPost, int iTimeout, char * pData, char* pUrl, string &strResp);
+	UtilsError DoPost(char* pData, string &strResp);
 
-	// UtilsError DoPost(const char* pAgent, int iPost, int iTimeout, const char* cookieFilePath, char * pData, char* pUrl, string &strResp);
-	// UtilsError DoPost(int iPost, int iTimeout, const char* cookieFilePath, char * pData, char* pUrl, string &strResp);
+
+
+	/*
+	 * @brief       发送Get请求
+	 * @param[in]   arg1			arg1_command
+	 * @param[in]   arg2			arg2_command
+	 * @param[in]   arg3			arg3_command
+	 * @return      return			return_command
+	 */
+	// UtilsError DoGet();
 
 
 
