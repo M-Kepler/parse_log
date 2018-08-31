@@ -51,7 +51,8 @@ int multi_thread()
 	llLoadSize = stoll(strLoadSize);
 	iLineBuffer = stoi(strLineBuffer);
 
-	const char* filename = "runlog0-3.1.log";
+	// const char* filename = "runlog0-3.1.log";
+	const char* filename = "test.log";
 	ios::sync_with_stdio(false);
 	pLogMaps = new LogMap[iThreadCount];
 
@@ -79,6 +80,7 @@ int multi_thread()
 		streamoff llFileSize; // 文件大小
 		file.seekg(0, ios::end); // 文件指针指到文件末尾
 		streamoff llFileLen = file.tellg();
+		streampos pCurrPos = file.tellg(); // 上一次文件指针
 		streamoff llThreadIndex, llThreadPart;
 		streamsize llRealSize; // 实际读入大小(因为可能遇到需要的单词被截位)
 		bool bBufferIndex = 0; // 缓存下标
@@ -127,7 +129,10 @@ int multi_thread()
 			{
 				for (int i = 0; i < iThreadCount; ++i)
 				{
-					threads[i].join();
+					if (threads[i].joinable())
+					{
+						threads[i].join();
+					}
 				}
 			}
 			else
@@ -170,6 +175,34 @@ int multi_thread()
 
 			bBufferIndex = !bBufferIndex; // 切换 Buffer 装数据
 			cout << "文件剩余大小: llFileSize: " << llFileSize << endl << endl << endl << endl; // debug
+
+			// 文件滚动增长
+			if (llFileSize != 0)
+			{
+				continue;
+			}
+			else
+			{
+				for (int i = 0; i < iThreadCount; ++i)
+				{
+					if (threads[i].joinable())
+					{
+						threads[i].join();
+					}
+				}
+				bNeedWait = false;
+
+				Sleep(3000);// 文件扫描时间
+				file.seekg(0, ios::end); // 文件指针指到文件末尾
+				streampos pCurrPos2 = file.tellg(); // 新的文件指针
+
+				llFileSize = pCurrPos2 - pCurrPos;
+				pCurrPos = pCurrPos2;
+				streamsize llRealSize; // 实际读入大小(因为可能遇到需要的单词被截位)
+				cout << "===================---------------===================" << endl;
+				cout << "增长文件大小: " << llFileSize << endl; // debug
+				cout << "===================---------------===================" << endl;
+			}
 		}
 
 		// 清理
@@ -191,7 +224,7 @@ int multi_thread()
 			}
 		}
 	}
-	TimeoutScan(allLogMap);
+	// TimeoutScan(allLogMap);
 	t_end = clock();
 
 	cout << "\r\nAll completed in " << t_end - t_start << "ms." << endl; // debug
