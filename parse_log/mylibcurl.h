@@ -1,25 +1,11 @@
 #pragma once
-#include <curl/curl.h>
+#include "define.h"
 #include <string>
-using std::string;
-
-#ifdef _DEBUG
-#pragma comment(lib, "libcurl_a_debug")
-#else
-#pragma comment(lib, "libcurl_a")
+#ifdef OS_IS_LINUX
+#include <cstring>
 #endif
-#pragma comment(lib, "Ws2_32")
-#pragma comment(lib, "Wldap32")
-#pragma comment(lib, "winmm")
-#pragma comment(lib, "Crypt32")
-
-#ifdef UNIX
-#define LPCSTR char*
-#define LONG long
-#define LONGLONG long long
-#define HANDLE void*
-#define INVALID_HANDLE_VALUE -1
-# endif
+#include <curl/curl.h>
+using std::string;
 
 
 class CLibcurlCallback

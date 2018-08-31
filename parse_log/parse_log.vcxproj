@@ -147,6 +147,8 @@
     <None Include="runlog_config.ini" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="define.h" />
+    <ClInclude Include="makefile" />
     <ClInclude Include="mylibcurl.h" />
     <ClInclude Include="inifile.h" />
     <ClInclude Include="log.h" />

@@ -2,19 +2,11 @@
 #ifndef __LOG_H_
 #define __LOG_H_
 
-#define GOOGLE_GLOG_DLL_DECL
-#define GLOG_NO_ABBREVIATED_SEVERITIES
-
+#include "define.h"
 #include <iostream>
 #include <glog/logging.h>
 #include <string>
 #include "inifile.h"
-
-#ifdef _DEBUG
-#pragma comment(lib, "glogd")
-#else
-#pragma comment(lib, "glog")
-#endif
 
 using namespace std;
 using namespace inifile;

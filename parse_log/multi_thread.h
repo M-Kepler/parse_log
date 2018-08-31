@@ -12,7 +12,6 @@
 
 using namespace std;
 
-#define WINDOWS
 
 /*
 // 为 char* 类型提供等价准则

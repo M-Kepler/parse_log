@@ -199,9 +199,19 @@ size_t CLibcurl::WriteCallback(void* pBuffer, size_t nSize, size_t nMemByte, voi
 	case Lf_Download://ÏÂÔØ
 	{
 		if (pThis->m_hFile == INVALID_HANDLE_VALUE)
+		{
 			return 0;
-		if (!WriteFile(pThis->m_hFile, pBuffer, nSize*nMemByte, &dwWritten, NULL))
+		}
+		// TODO
+#ifdef OS_IS_LINUX
+		FILE* file;
+		if (fwrite(pBuffer, nSize*nMemByte, 1, file) < 1)
+#else
+		 if (!WriteFile(pThis->m_hFile, pBuffer, nSize*nMemByte, &dwWritten, NULL))
+#endif
+		{
 			return 0;
+		}
 	}
 	break;
 	case Lf_Post://PostÊý¾Ý

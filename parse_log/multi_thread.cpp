@@ -255,19 +255,12 @@ vector<string> ReadLineToVec(int iStep, streamoff llStart, streamsize llSize)
 	char *strToken = NULL;
 	char *nextToken = NULL;
 
-#ifdef WINDOWS
 	strToken = strtok_s(pLineBuffer, strDelim, &nextToken);
-#else
-
-#endif
 	while (strToken != NULL)
 	{
 		sLine.assign(strToken);
 		vecStringLine.push_back(sLine);
-#ifdef WINDOWS
 		strToken = strtok_s(NULL, strDelim, &nextToken);
-#else
-#endif
 	}
 	/*
 	cout << vecStringLine[0] << endl; // debug
