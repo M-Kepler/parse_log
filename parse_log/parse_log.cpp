@@ -30,11 +30,46 @@ int main(int argv, char* argc[])
 	CUtils clUtils;
 
 	ifstream file;
+	streamoff start = 0;
+	streamsize size;
+	int iLen;
 	file.open(filename, ios::binary | ios::in);
 	if (!file)
 	{
 		cout << "open file fail" << endl;
 	}
+	/*
+	else
+	{
+		string strLastLine;
+		while (file.peek() != EOF)
+		{
+			getline(file, strLastLine);
+		}
+		// cout << strLastLine << endl;
+		iLen = strLastLine.length();
+		file.seekg(-(iLen + 1), ios::end);
+		streampos pos1 = file.tellg();
+		file.seekg(0, ios::end);
+		streampos pos2 = file.tellg();
+		file.seekg(-(iLen + 1), ios::end);
+		size = pos2 - pos1;
+
+		struct _stat buf;
+
+		cout << "from file topoint: " << iLen << endl;
+
+		file.read(loadedFile2[step], size);
+	}
+
+	char* filebuffer = loadedFile2[step];
+	for (streamoff i = 0; i < size; ++i)
+	{
+		cout << filebuffer[i];
+	}
+
+	*/
+
 
 	string str_req = "20180430-211359-522345 18225    99 Req: LBM=L0301002, MsgId=0000000100F462171E4D4B25, Len=299, Buf=_ENDIAN=0&F_OP_USER=9999&F_OP_ROLE=2&F_SESSION=0123456789&F_OP_SITE=0050569e247d&F_OP_BRANCH=999&F_CHANNEL=0&USE_NODE_FUNC=106127&CUSTOMER=150165853&MARKET=1&BOARD=0";
 	string str_ans = "20180719-094803-110762 12343    98 Ans: LBM=L1160005, MsgId=000001050001D55B1F297DD2, Len=792, Cost=161, Buf=&_1=0, 0, 业务程序运行正常, &_2=13863, 2, 21, 开户权限组<营业部>, 0, 10012, 2011-07-11 17:12:43.299541";
@@ -201,7 +236,7 @@ int main(int argv, char* argc[])
 	*/
 
 
-	multi_thread();
+	 multi_thread();
 
 	delete loadedFile2[0];
 	delete loadedFile2[1];
