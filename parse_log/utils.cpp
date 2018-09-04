@@ -77,8 +77,11 @@ time_t CUtils::StringToMs(string strOrig, int iStart, int iEnd)
 
 	formate = (char*)"%4d%2d%2d-%2d%2d%2d";
 	str = strOrig.substr(iStart, len);
-	// sscanf_s(str.c_str(), formate, &year, &month, &day, &hour, &minute, &second);
+#ifdef OS_IS_LINUX
 	sscanf(str.c_str(), formate, &year, &month, &day, &hour, &minute, &second);
+#else
+	sscanf_s(str.c_str(), formate, &year, &month, &day, &hour, &minute, &second);
+#endif
 
 	tm_.tm_year = year - 1900;
 	tm_.tm_mon = month - 1;
@@ -183,7 +186,6 @@ time_t CUtils::GetCurrentTimeMs()
 }
 
 
-// UtilsError CUtils::DoPost(int iPort, int iTimeout, char * pData, char* pHttpUrl, string &strResp)
 UtilsError CUtils::DoPost(char * pData, string &strResp)
 {
 	string name;
@@ -245,45 +247,3 @@ UtilsError CUtils::DoPost(char * pData, string &strResp)
 		return UTILS_RTMSG_OK;
 	}
 }
-
-
-/*
-UtilsError CUtils::MsgPost(char* pData, string &strResp)
-{
-	char* pUrl;
-	int iPort;
-	int iTimeOut;
-	string strPort;
-	string strTimeOut;
-	string strHttpUrl; // http 地址
-	string strHttpHeader; // http 请求头
-	string strHttpRepeatNum; // 超时重发次数
-	string strHttpTimeOut; // 超时时间
-	UtilsError utilsError;
-
-	if ((utilsError = GetConfigValue(strHttpUrl, "HttpUrl", "CURL")) != UTILS_RTMSG_OK
-		|| (utilsError = GetConfigValue(strPort, "HttpPort", "CURL")) != UTILS_RTMSG_OK
-		|| (utilsError = GetConfigValue(strTimeOut, "HttpTimeOut", "CURL")) != UTILS_RTMSG_OK
-		|| (utilsError = GetConfigValue(strHttpHeader, "HttpHeader", "CURL")) != UTILS_RTMSG_OK
-		|| (utilsError = GetConfigValue(strHttpRepeatNum, "HttpRepeatNum", "CURL")) != UTILS_RTMSG_OK
-		)
-	{
-		LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
-		// FIXME // 异常抛出到界面
-		return utilsError;
-	}
-	else
-	{
-
-		pUrl = (char*)strHttpUrl.c_str();
-		iPort = stoi(strPort);
-		iTimeOut = stoi(strTimeOut);
-		// 发送数据的格式是:name=value&name2=value2&name3=value3";
-		// pData = (char*)"username=870131615@qq.com&password=159357yp";
-		utilsError = DoPost(iPort, iTimeOut, pData, pUrl, strResp);
-		return utilsError;
-	}
-}
-
-*/
-

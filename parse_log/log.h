@@ -8,6 +8,12 @@
 #include <string>
 #include "inifile.h"
 
+#ifdef OS_IS_LINUX
+#include <unistd.h>
+#else
+#include <io.h>
+#endif
+
 using namespace std;
 using namespace inifile;
 
@@ -41,12 +47,15 @@ public:
 		return &instance;
 	}
 
-	char * GetConfigPath();
 	int InitGlog();
 	void CloseGlog();
+	bool DirExist();
+	void SetLogDir(char*);
+	char* GetConfigPath();
 
 private:
 	char* ConfigPath = (char*)"./runlog_config.ini";
+	char* LogDir = (char*)"./log";
 
 };
 

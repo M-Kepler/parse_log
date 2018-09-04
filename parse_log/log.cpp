@@ -24,7 +24,6 @@ int CGlog::InitGlog()
 	Section = "GLOG";
 
 	clIniFile.load(ConfigPath);
-	clIniFile.getValue(Section, Key_Log_Lvl, Value_Log_Lvl);
 
 	if ((iRetCode = clIniFile.getValue(Section, Key_Log_Lvl, Value_Log_Lvl)) != RET_OK
 		|| (iRetCode = clIniFile.getValue(Section, Key_Log_Path, Value_Log_Path)) != RET_OK
@@ -35,8 +34,16 @@ int CGlog::InitGlog()
 		return RET_ERR;
 	}
 
-	// FIXME
-	// 全局初始化glog
+	// 设置log路径
+	SetLogDir((char*)Value_Log_Path.c_str());
+
+	if (!DirExist())
+	{
+		// XXX
+		// WARNING 报Log文件夹不存在的警告
+		cout << "log目录不存在" << endl;
+	}
+
 	google::SetLogFilenameExtension(".log");
 	FLAGS_logbufsecs = stoi(Value_Log_Buf_Secs);
 	FLAGS_max_log_size = stoi(Value_LogFile_Max_Size);
@@ -50,9 +57,8 @@ int CGlog::InitGlog()
 
 
 	// 设置glog的输出级别，这里的含义是输出INFO级别以上的信息
-	google::SetStderrLogging(google::GLOG_INFO);
+	google::SetStderrLogging(stoi(Value_Log_Lvl));
 
-	// FLAGS_colorlogtostderr = true;                     // 开启终端颜色区分
 	// 当磁盘被写满时，停止日志输出
 	FLAGS_stop_logging_if_full_disk = true;
 
@@ -60,7 +66,27 @@ int CGlog::InitGlog()
 }
 
 
-char * CGlog::GetConfigPath()
+void CGlog::SetLogDir(char* logpath)
+{
+	LogDir = logpath;
+}
+
+
+bool CGlog::DirExist()
+{
+	int dir_exist = access(LogDir, 0);
+	if (0 != dir_exist)
+	{
+		return false;
+	}
+	else
+	{
+		return true;
+	}
+}
+
+
+char* CGlog::GetConfigPath()
 {
 	return ConfigPath;
 }

@@ -114,7 +114,6 @@ public:
 	 * @param[in]	strResp			收到的数据
 	 * @return      UtilsError		错误码
 	 */
-	// UtilsError DoPost(int iPost, int iTimeout, char * pData, char* pUrl, string &strResp);
 	UtilsError DoPost(char* pData, string &strResp);
 
 

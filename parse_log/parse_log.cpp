@@ -158,7 +158,6 @@ int main(int argv, char* argc[])
 	// 获取当前时间
 	cout << "当前时间(毫秒): " << clUtils.GetCurrentTimeMs() << endl;
 
-	LOG(INFO) << "asdfasdfasdf" << endl;
 	// libcurl
 	// curl 初始化
 	/*
@@ -187,44 +186,20 @@ int main(int argv, char* argc[])
 
 	// clUtils.DoPost
 	/*
-	string strRespData;
-	string strPort;
-	string strTimeOut;
-	string strHttpUrl; // http 地址
-	string strHttpHeader; // http 请求头
-	string strHttpRepeatNum; // 超时重发次数
-	string strHttpTimeOut; // 超时时间
-	UtilsError enumUtilsError;
-
-	if ((enumUtilsError = clUtils.GetConfigValue(strHttpUrl, "HttpUrl", "CURL")) != UTILS_RTMSG_OK
-		|| (enumUtilsError = clUtils.GetConfigValue(strPort, "HttpPort", "CURL")) != UTILS_RTMSG_OK
-		|| (enumUtilsError = clUtils.GetConfigValue(strTimeOut, "HttpTimeOut", "CURL")) != UTILS_RTMSG_OK
-		|| (enumUtilsError = clUtils.GetConfigValue(strHttpHeader, "HttpHeader", "CURL")) != UTILS_RTMSG_OK
-		|| (enumUtilsError = clUtils.GetConfigValue(strHttpRepeatNum, "HttpRepeatNum", "CURL")) != UTILS_RTMSG_OK
-		)
-	{
-		LOG(ERROR) << "获取配置失败, 错误码: " << enumUtilsError << endl;
-		// FIXME
-		// 异常抛出到界面
-		abort();
-	}
-
-
-	// clUtils.DoPost(int iPost, int iTimeout, const char* cookieFilePath, char * pData, char* pUrl, string &strResp);
-	char *pData = NULL;
-	char *pUrl = (char*)strHttpUrl.c_str();
-	int iPort = stoi(strPort);
-	int iTimeOut = stoi(strTimeOut);
 	// 发送数据的格式是:name=value&name2=value2&name3=value3";
-	pData = (char*)"username=870131615@qq.com&password=159357yp";
+	char *pData = (char*)"username=870131615@qq.com&password=159357yp";
 	// pData = (char*)"maintype=10001&subtype=100&appver=2.5.19.3753&sysver=Microsoft Windows 7&applist=100:15,200:2&sign=2553d888bc922275eca2fc539a5f0c1b";
-
-	utileError = clUtils.DoPost(iPort, iTimeOut, pData, pUrl, strResp);
-	if (UTILS_RTMSG_OK == utileError)
+	utileError = clUtils.DoPost(pData, strResp);
+	if (UTILS_RTMSG_OK != utileError)
+	{
+		cout << "POST 请求失败, 错误码: " << utileError << endl;
+	}
+	else
 	{
 		cout << "发post成功" << endl << "收到回复数据为:\n" << strResp << endl;
 	}
 	*/
+
 
 	multi_thread();
 

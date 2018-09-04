@@ -16,8 +16,8 @@ CLibcurl::CLibcurl(void)
 	, m_curlList(NULL)
 {
 	m_pCurl = curl_easy_init();
-	curl_easy_setopt(m_pCurl, CURLOPT_WRITEFUNCTION, WriteCallback);
-	curl_easy_setopt(m_pCurl, CURLOPT_WRITEDATA, this);
+	curl_easy_setopt(m_pCurl, CURLOPT_WRITEFUNCTION, WriteCallback); // 设置回调函数,处理返回的数据
+	curl_easy_setopt(m_pCurl, CURLOPT_WRITEDATA, this); // 设置WriteCallBack第四个参数
 }
 
 
@@ -50,7 +50,7 @@ CURLcode CLibcurl::SetTimeout(int nSecond)
 CURLcode CLibcurl::SetConnectTimeout(int nSecond)
 {
 	assert(nSecond > 0);
-	m_curlCode = curl_easy_setopt(m_pCurl, CURLOPT_CONNECTTIMEOUT, nSecond);
+	m_curlCode = curl_easy_setopt(m_pCurl, CURLOPT_CONNECTTIMEOUT, nSecond); // 连接等待时间
 	return  m_curlCode;
 }
 
@@ -63,6 +63,7 @@ CURLcode CLibcurl::SetUserAgent(LPCSTR lpAgent)
 	return m_curlCode;
 }
 
+/*
 CURLcode CLibcurl::SetResumeFrom(LONG lPos)
 {
 	assert(lPos > 0);
@@ -76,6 +77,7 @@ CURLcode CLibcurl::SetResumeFromLarge(LONGLONG llPos)
 	m_curlCode = curl_easy_setopt(m_pCurl, CURLOPT_RESUME_FROM_LARGE, llPos);
 	return m_curlCode;
 }
+*/
 
 CURLcode CLibcurl::AddHeader(LPCSTR lpKey, LPCSTR lpValue)
 {
@@ -102,7 +104,7 @@ void CLibcurl::ClearHeaderList()
 CURLcode CLibcurl::SetCookie(LPCSTR lpCookie)
 {
 	assert(lpCookie != NULL);
-	m_curlCode = curl_easy_setopt(m_pCurl, CURLOPT_COOKIE, lpCookie);
+	m_curlCode = curl_easy_setopt(m_pCurl, CURLOPT_COOKIE, lpCookie); // 设置发送时携带的cookie
 	return m_curlCode;
 }
 
@@ -124,6 +126,7 @@ void CLibcurl::SetCallback(CLibcurlCallback* pCallback, void* lpParam)
 	m_pCallback = pCallback;
 }
 
+/*
 CURLcode CLibcurl::DownloadToFile(LPCSTR lpUrl, LPCSTR lpFile)
 {
 	CURLcode code = curl_easy_setopt(m_pCurl, CURLOPT_URL, lpUrl);
@@ -138,17 +141,17 @@ CURLcode CLibcurl::DownloadToFile(LPCSTR lpUrl, LPCSTR lpFile)
 	m_curlCode = curl_easy_perform(m_pCurl);
 	return m_curlCode;
 }
+*/
 
 CURLcode CLibcurl::Post(LPCSTR lpUrl, LPCSTR lpData)
 {
 	assert(lpData != NULL);
 	curl_easy_setopt(m_pCurl, CURLOPT_POST, 1);
-	curl_easy_setopt(m_pCurl, CURLOPT_POSTFIELDS, lpData);
-	//curl_easy_setopt(m_pCurl, CURLOPT_POSTFIELDSIZE, lpData);
+	curl_easy_setopt(m_pCurl, CURLOPT_POSTFIELDS, lpData); // Post请求的数据
 	curl_easy_setopt(m_pCurl, CURLOPT_URL, lpUrl);
 	m_lfFlag = Lf_Post;
 	m_strRespons.clear();
-	m_curlCode = curl_easy_perform(m_pCurl);
+	m_curlCode = curl_easy_perform(m_pCurl); // 开始执行
 	return m_curlCode;
 }
 
@@ -157,7 +160,7 @@ CURLcode CLibcurl::Post(LPCSTR lpUrl, unsigned char* lpData, unsigned int nSize)
 	assert(lpData != NULL && nSize > 0);
 	curl_easy_setopt(m_pCurl, CURLOPT_POST, 1);
 	curl_easy_setopt(m_pCurl, CURLOPT_POSTFIELDS, lpData);
-	curl_easy_setopt(m_pCurl, CURLOPT_POSTFIELDSIZE, nSize);
+	curl_easy_setopt(m_pCurl, CURLOPT_POSTFIELDSIZE, nSize); // 
 	curl_easy_setopt(m_pCurl, CURLOPT_URL, lpUrl);
 	m_lfFlag = Lf_Post;
 	m_strRespons.clear();
@@ -170,7 +173,7 @@ CURLcode CLibcurl::Get(LPCSTR lpUrl)
 	assert(lpUrl != NULL);
 	curl_easy_setopt(m_pCurl, CURLOPT_HTTPGET, 1);
 	curl_easy_setopt(m_pCurl, CURLOPT_URL, lpUrl);
-	curl_easy_setopt(m_pCurl, CURLOPT_FOLLOWLOCATION, 1);//支持重定向
+	curl_easy_setopt(m_pCurl, CURLOPT_FOLLOWLOCATION, 1); // 支持302重定向
 	curl_easy_setopt(m_pCurl, CURLOPT_SSL_VERIFYPEER, 0L);
 	curl_easy_setopt(m_pCurl, CURLOPT_SSL_VERIFYHOST, 0L);
 	m_lfFlag = Lf_Get;

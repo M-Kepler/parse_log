@@ -1,15 +1,5 @@
-/*
- * 程序第一次开始运行时, 已存在的日志内容不需要读取;
- * 所以如果开始运行时, 已存在的日志中最后一行是ans串,则应该丢弃掉该行
- *
- * 操作员登录的时候有一条是请求所有菜单时, 返回的串长度是很长很长的
- *
- * 还没试过日志不断增长的情况
- *
-*/
 #include "multi_thread.h"
 #include "utils.h"
-
 
 char* loadedFile[2]; // 存放指向 char* 类型的指针的数组
 typedef unordered_multimap<string, string> LogMap;
@@ -27,15 +17,17 @@ vector<string> vecThreadLines, vecEndThreadLines;
 
 int multi_thread()
 {
+	char* req;
+	int iLineLen;
 	int iThreadCount;
 	int iLineBuffer;
+	string strLastLine;
 	string strLineBuffer;
 	string strLoadSize;
 	string strThreadCount;
 	streamsize llLoadSize;
 	streamsize llMaxSize;
 
-	// enumUtilsError = clUtils.GetConfigValue(iLineBuffer, "LoadSize");
 
 	if ((utilsError = clUtils.GetConfigValue(strLoadSize, "LoadSize")) != UTILS_RTMSG_OK
 		|| (utilsError = clUtils.GetConfigValue(strThreadCount, "ThreadCount")) != UTILS_RTMSG_OK
@@ -51,8 +43,8 @@ int multi_thread()
 	llLoadSize = stoll(strLoadSize);
 	iLineBuffer = stoi(strLineBuffer);
 
-	// const char* filename = "runlog0-3.1.log";
-	const char* filename = "test.log";
+	const char* filename = "runlog0-3.1.log";
+	// const char* filename = "test.log";
 	ios::sync_with_stdio(false);
 	pLogMaps = new LogMap[iThreadCount];
 
@@ -78,6 +70,7 @@ int multi_thread()
 		/* 确认文件大小 bytes */
 		streamoff llStart = 0;
 		streamoff llFileSize; // 文件大小
+		streamoff llCurrFileSize; // 文件大小
 		file.seekg(0, ios::end); // 文件指针指到文件末尾
 		streamoff llFileLen = file.tellg();
 		streampos pCurrPos = file.tellg(); // 上一次文件指针
@@ -87,6 +80,8 @@ int multi_thread()
 		bool bNeedWait = false;
 		thread *threads = new thread[iThreadCount];
 
+		// TODO 分离
+		// 获取大小
 		/* 兼容带 bom 的 utf8 编码格式 */
 		if (llFileLen > 3)
 		{
@@ -109,10 +104,35 @@ int multi_thread()
 		}
 		cout << "文件大小: " << llFileSize << endl; // debug
 
+
+		// TODO
+		// 原有的日志不需要分析
+		// 获取文件末行, 判断是ans还是req再确定大小
+		req = (char*)"Req:";
+		while (file.peek() != EOF)
+		{
+			getline(file, strLastLine);
+		}
+		iLineLen = strLastLine.length();
+		cout << strLastLine << endl << strLastLine.length() << endl;
+		if (strstr(strLastLine.c_str(), req) != NULL)
+		{
+			llCurrFileSize = iLineLen;
+			// allLogMap.insert(pair<string, string>(clUtils.GetMsgValue(strLastLine, "MsgId"), strLastLine));
+		}
+		else
+		{
+			// 等待文件增长
+		}
+
+		// TODO
+		// 分离出来, 入参为文件的大小、文件开始位置
+
 		while (llFileSize)
 		{
 			llRealSize = llFileSize > llMaxSize ? getRealSize(&file, llStart, stoi(strLoadSize)) : llFileSize;
 			llThreadIndex = 0;
+			// llThreadIndex = llFileSize - iLineLen - 1; // 减去最后一行与上一行之间的\n字符
 			llThreadPart = llRealSize / iThreadCount;
 
 			cout << "\n\n\n读入数据到 loadedFile[bBufferIndex]: " << bBufferIndex << endl; // debug
@@ -147,7 +167,10 @@ int multi_thread()
 					llThreadIndex += 1; // 下一个线程读取的开始位置, 跳过\n字符
 				}
 
-				llFileLen = getBlockSize(bBufferIndex, llThreadIndex, llThreadPart);
+				if (llThreadIndex != llRealSize) // 避免文件只有一行时getBlockSize报错
+				{
+					llFileLen = getBlockSize(bBufferIndex, llThreadIndex, llThreadPart);
+				}
 
 				// 若剩余行数少于线程数
 				// 还需要判断一下线程已处理的字符和该块数据的大小
@@ -194,13 +217,14 @@ int multi_thread()
 
 				Sleep(3000);// 文件扫描时间
 				file.seekg(0, ios::end); // 文件指针指到文件末尾
-				streampos pCurrPos2 = file.tellg(); // 新的文件指针
+				streampos pNewPos = file.tellg(); // 新的文件指针
 
-				llFileSize = pCurrPos2 - pCurrPos;
-				pCurrPos = pCurrPos2;
-				streamsize llRealSize; // 实际读入大小(因为可能遇到需要的单词被截位)
+				llFileSize = pNewPos - pCurrPos;
+				pCurrPos = pNewPos;
+				// streamsize llRealSize; // 实际读入大小(因为可能遇到需要的单词被截位)
 				cout << "===================---------------===================" << endl;
 				cout << "增长文件大小: " << llFileSize << endl; // debug
+				LOG(INFO) << "增长文件大小: " << llFileSize << endl; // debug
 				cout << "===================---------------===================" << endl;
 			}
 		}
