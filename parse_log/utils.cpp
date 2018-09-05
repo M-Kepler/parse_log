@@ -91,7 +91,8 @@ time_t CUtils::StringToMs(string strOrig, int iStart, int iEnd)
 	tm_.tm_sec = second;
 	tm_.tm_isdst = 0;
 	time_t tm_s = mktime(&tm_);
-	if (strOrig.length() <= 15)
+	// if (strOrig.length() <= 15)
+	if (len <= 15)
 	{
 		time_t tm_ms = tm_s * 1000;
 		return tm_ms;
@@ -159,6 +160,7 @@ UtilsError CUtils::GetConfigValue(string & strValue, string strKey, string strSe
 }
 
 
+/*
 UtilsError CUtils::GetConfigValue(int& iValue, string strKey, string strSection)
 {
 	int iRetCode;
@@ -176,6 +178,7 @@ UtilsError CUtils::GetConfigValue(int& iValue, string strKey, string strSection)
 	}
 	return UTILS_RTMSG_OK;
 }
+*/
 
 
 time_t CUtils::GetCurrentTimeMs()

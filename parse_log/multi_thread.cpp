@@ -14,10 +14,10 @@ UtilsError utilsError;
 string strResponse;
 vector<string> vecThreadLines, vecEndThreadLines;
 
+int iCount = 0;
 
 int multi_thread()
 {
-	char* strReq;
 	int iLineLen;
 	int iThreadCount;
 	int iLineBuffer;
@@ -28,7 +28,7 @@ int multi_thread()
 	streamsize llLoadSize;
 	streamsize llMaxSize;
 
-
+	// 获取配置
 	if ((utilsError = clUtils.GetConfigValue(strLoadSize, "LoadSize")) != UTILS_RTMSG_OK
 		|| (utilsError = clUtils.GetConfigValue(strThreadCount, "ThreadCount")) != UTILS_RTMSG_OK
 		|| (utilsError = clUtils.GetConfigValue(strLineBuffer, "LineBuffer")) != UTILS_RTMSG_OK
@@ -43,8 +43,8 @@ int multi_thread()
 	llLoadSize = stoll(strLoadSize);
 	iLineBuffer = stoi(strLineBuffer);
 
-	const char* filename = "runlog0-3.1.log";
-	// const char* filename = "test.log";
+	// const char* filename = "runlog0-3.1.log";
+	const char* filename = "test.log";
 	ios::sync_with_stdio(false);
 	pLogMaps = new LogMap[iThreadCount];
 
@@ -105,13 +105,10 @@ int multi_thread()
 		{
 			llFileSize = llFileLen;
 		}
-		cout << "文件大小: " << llFileSize << endl; // debug
+		cout << "\n===========-------------------------===========" << "总文件大小: " << llFileSize << "===========-------------------------===========" <<  endl; // debug
 
-
-
-		// TODO
 		// 原有的日志不需要分析
-		strReq = (char*)"Req:";
+		char* strReq = (char*)"Req:";
 		file.seekg(0, ios::beg);
 		while (file.peek() != EOF)
 		{
@@ -136,9 +133,12 @@ int multi_thread()
 		}
 		else
 		{
-			// FIXME 
-			cout << "等待文件增长" << endl;
+			// TODO
+			cout << "非req的行" << endl;
+			// llFileSize = 0;
 		}
+
+		cout << "需分析文件大小: " << llFileSize << "\t分析开始位置: " << llLastLinePos << "\t分析结束位置: " << llEndFilePos << endl; // debug
 
 		ParseLog(file, llFileSize, pCurrPos, strLoadSize, llMaxSize, llStart, iThreadCount);
 
@@ -147,9 +147,8 @@ int multi_thread()
 		delete loadedFile[1];
 		file.close();
 
-		// 组合map
-		// 每个线程对各自的map进行插入操作,避免了release模式下正常, debug模式下偶现线程lang住的问题
-		//	LogMap *map = pLogMaps + id;
+		// TODO 组合map
+		/*
 		for (int i = 0; i < iThreadCount; ++i)
 		{
 			LogMapKeySet p = (pLogMaps + i)->begin();
@@ -159,8 +158,8 @@ int multi_thread()
 				allLogMap.insert(pair<string, string>(p->first, p->second));
 			}
 		}
+		*/
 	}
-	TimeoutScan(allLogMap);
 	t_end = clock();
 
 	cout << "\r\nAll completed in " << t_end - t_start << "ms." << endl; // debug
@@ -199,8 +198,6 @@ void inline readLoad(int iStep, ifstream *file, streamoff llStart, streamsize ll
 }
 
 
-// TODO
-// 第一结果集
 vector<string> ReadLineToVec(int iStep, streamoff llStart, streamsize llSize)
 {
 	char *pFileBuffer = NULL;
@@ -238,8 +235,7 @@ void ParseMsgLine(vector<string> vecStr, int id, string strKey)
 	string MsgId;
 	LogMap *map = pLogMaps + id;
 
-	// FIXME
-	// 加上这句后, 偶现超时的输出有问题
+	// FIXME glog不是线程安全的?
 	// LOG(INFO) << "id: " << id << "\tstrKey: " << strKey << endl;
 	auto end = map->end();
 	if (!vecStr.empty())
@@ -250,47 +246,75 @@ void ParseMsgLine(vector<string> vecStr, int id, string strKey)
 			if (MsgId.empty())
 			{
 				// TODO
-				// ORA错误
-				// 对于一个请求分割多行的情况, 可否通过重载这个函数来实现, 判断行的开始和结束，并从日志行中提取需要的撞到map中
-				// 如果日志行中没有MsgId呢?
+				// 没有MsgId的串为非req/ans 串不需要插入到map中
 			}
 			else
 			{
 				map->insert(pair<string, string>(MsgId, vecStr[i]));
+				/*
+				char* strReq = (char*)"Req:";
+				if ((strstr(vecStr[i].c_str(), strReq) != NULL) && (map->find(MsgId) == map->end()))
+				{
+					map->insert(pair<string, string>(MsgId, vecStr[i]));
+				}
+				*/
 			}
 		}
 	}
 }
 
 
-// TODO 定时遍历map
-// 扫描map, 找出超时的lbm
-// 扫描map, 找出应答错误的lbm
-// 扫描的时候是否需要考虑线程同步
-void TimeoutScan(unordered_multimap<string, string> mymap)
+// TODO
+// void TimeoutScan(unordered_multimap<string, string> mymap)
+void TimeoutScan(unordered_multimap<string, string> &mymap)
 {
+	int iLbmTimeOut;
+	string strLbmTimeOut;
 	// 遍历map, 对指定键的元素数小于2的，认为缺失req或ans
 	auto begin = mymap.begin();
+	cout << "\n==============-------------------------==============" << "allLogMap.size():   " << allLogMap.size() << "==============-------------------------==============" << endl;
 	for (; begin != mymap.end(); begin++)
 	{
 		if (mymap.count(begin->first) < 2)
 		{
-			char* pMsgData = (char*)begin->second.c_str();
-			utilsError = clUtils.DoPost(pMsgData, strResponse);
-			LOG(INFO) << "\n==============-------------------------==============" << "发送的数据为:   " << "==============-------------------------==============" << endl;
-			LOG(INFO) << pMsgData << endl;
-
-			if (UTILS_RTMSG_OK != utilsError)
+			// time_t MsgTimeMs = clUtils.StringToMs(begin->second);
+			time_t MsgTimeMs = clUtils.StringToMs(begin->second, 31, 45);
+			time_t CurrTimeMs = clUtils.GetCurrentTimeMs();
+			
+			// 获取配置
+			if ((utilsError = clUtils.GetConfigValue(strLbmTimeOut, "LbmTimeOut")) != UTILS_RTMSG_OK )
 			{
-				LOG(ERROR) << "\n==============-------------------------==============" << "发POST请求失败! " << "==============-------------------------==============" << endl;
-				LOG(ERROR) << "错误码: " << utilsError << endl;
+				LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
+				// FIXME
+				// 异常抛出到界面
+				abort();
 			}
-			else
+			iLbmTimeOut = stoi(strLbmTimeOut);
+
+			if ((CurrTimeMs - MsgTimeMs) > iLbmTimeOut)
 			{
-				cout << "\n缺失应答串的MsgId： \t" << clUtils.GetMsgValue(begin->second, "MsgId") << endl; // debug
-				LOG(INFO) << "\n==============-------------------------==============" << "发POST请求成功! " << "==============-------------------------==============" << endl;
-				LOG(INFO) << "\n==============-------------------------==============" << "收到的回复为:   " << "==============-------------------------==============" << endl;
-				LOG(INFO) << strResponse << endl;
+				continue;
+				/*
+				cout << "当前时间(ms): " << CurrTimeMs << "\t" << "Msg时间(ms): " << MsgTimeMs << endl;
+				char* pMsgData = (char*)begin->second.c_str();
+				utilsError = clUtils.DoPost(pMsgData, strResponse);
+				LOG(INFO) << "\n==============-------------------------==============" << "发送的数据为:   " << "==============-------------------------==============" << endl;
+				LOG(INFO) << pMsgData << endl;
+
+				if (UTILS_RTMSG_OK != utilsError)
+				{
+					LOG(ERROR) << "\n==============-------------------------==============" << "发POST请求失败! " << "==============-------------------------==============" << endl;
+					LOG(ERROR) << "错误码: " << utilsError << endl;
+				}
+				else
+				{
+					LOG(ERROR) << "\n==============-------------------------==============" << "缺失的请求串为: " << "==============-------------------------==============" << endl;
+					LOG(INFO) <<  clUtils.GetMsgValue(begin->second, "MsgId") << endl; // debug
+					LOG(INFO) << "\n==============-------------------------==============" << "发POST请求成功! " << "==============-------------------------==============" << endl;
+					LOG(INFO) << "\n==============-------------------------==============" << "收到的回复为:   " << "==============-------------------------==============" << endl;
+					LOG(INFO) << strResponse << endl;
+				}
+				*/
 			}
 		}
 	}
@@ -331,6 +355,7 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 				if (threads[i].joinable())
 				{
 					threads[i].join();
+				
 				}
 			}
 		}
@@ -394,7 +419,7 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 			}
 			bNeedWait = false;
 
-			Sleep(3000);// 文件扫描时间
+			Sleep(500);// 文件扫描时间
 
 			file.seekg(0, ios::end); // 文件指针指到文件末尾
 			streampos pNewPos = file.tellg(); // 新的文件指针
@@ -409,6 +434,28 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 			cout << "增长文件大小: " << llFileSize << endl; // debug
 			cout << "==============-------------------------==============" << endl;
 		}
+
+		// TimeOutScan
+		for (int i = 0; i < iThreadCount; ++i)
+		{
+			LogMapKeySet p = (pLogMaps + i)->begin();
+			LogMapKeySet end = (pLogMaps + i)->end();
+			for (; p != end; ++p)
+			{
+				/*
+				char* strReq = (char*)"Req:";
+				string  MsgId = clUtils.GetMsgValue(p->second, "MsgId");
+				if ((strstr(p->second.c_str(), strReq) != NULL) && (allLogMap.find(MsgId) == end))
+				{
+					allLogMap.insert(pair<string, string>(p->first, p->second));
+				}
+				*/
+				allLogMap.insert(pair<string, string>(p->first, p->second));
+			}
+		}
+		TimeoutScan(allLogMap);
+		
 	}
 
 }
+
