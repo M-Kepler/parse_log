@@ -108,9 +108,11 @@ int multi_thread()
 		cout << "文件大小: " << llFileSize << endl; // debug
 
 
+
 		// TODO
 		// 原有的日志不需要分析
 		strReq = (char*)"Req:";
+		file.seekg(0, ios::beg);
 		while (file.peek() != EOF)
 		{
 			getline(file, strLastLine);
@@ -118,18 +120,24 @@ int multi_thread()
 		iLineLen = strLastLine.length();
 		if (strstr(strLastLine.c_str(), strReq) != NULL)
 		{
-			file.seekg(-(iLineLen + 1), ios::end);
+			file.clear();
+			// file.seekg(-(iLineLen + 1), ios::end); // XXX 这里+1是为了跳过换行符\n,但是当只有一行时, 行首是没有\n的
+			file.seekg(-(iLineLen), ios::end);
 			llLastLinePos = file.tellg();
+			if (llLastLinePos < 0)
+			{
+				llLastLinePos = 0;
+			}
+			file.clear();
 			file.seekg(0, ios::end);
 			llEndFilePos = file.tellg();
-
 			llFileSize = llEndFilePos - llLastLinePos;
 			llStart = llLastLinePos; // 开始读入位置回退到最末尾一行的行首
 		}
 		else
 		{
 			// FIXME 
-			// 等待文件增长
+			cout << "等待文件增长" << endl;
 		}
 
 		ParseLog(file, llFileSize, pCurrPos, strLoadSize, llMaxSize, llStart, iThreadCount);
@@ -141,7 +149,6 @@ int multi_thread()
 
 		// 组合map
 		// 每个线程对各自的map进行插入操作,避免了release模式下正常, debug模式下偶现线程lang住的问题
-		// 但是之前时间600ms左右，现在是1000ms左右。。。
 		//	LogMap *map = pLogMaps + id;
 		for (int i = 0; i < iThreadCount; ++i)
 		{
@@ -175,7 +182,8 @@ streamsize inline getRealSize(ifstream *file, streamoff llStart, streamsize llSi
 streamsize inline getBlockSize(int iStep, streamoff llStart, streamsize llSize)
 {
 	char *p = loadedFile[iStep] + llStart + llSize;
-	while (*p != '\n')
+	// while (*p != '\n')// 不用\n是因为当行尾没有\n时会无限循环
+	while (*p != '\0')
 	{
 		++llSize;
 		++p;
@@ -387,10 +395,14 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 			bNeedWait = false;
 
 			Sleep(3000);// 文件扫描时间
+
 			file.seekg(0, ios::end); // 文件指针指到文件末尾
 			streampos pNewPos = file.tellg(); // 新的文件指针
-
 			llFileSize = pNewPos - pCurrPos;
+			if (llFileSize < 0)
+			{
+				llFileSize = 0;
+			}
 			pCurrPos = pNewPos;
 			// streamsize llRealSize; // 实际读入大小(因为可能遇到需要的单词被截位)
 			cout << "==============-------------------------==============" << endl;

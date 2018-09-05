@@ -114,9 +114,8 @@ void TimeoutScan(unordered_multimap<string, string> mymap);
  * @param[in]   pCurrPos		要处理的文件的开始指针
  * @param[in]   strLoadSize		计划一次加载大小
  * @param[in]   llMaxSize		实际一次加载大小(防截位后的大小)
- * @param[in]   llStart			开始指针
+ * @param[in]   llStart			文件处理开始指针
  * @param[in]   iThread			处理线程数
  * @return      return			return_command
  */
-// void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string strLoadSize, streamsize llMaxSize, streamoff llStart, int iThreadCount);
-
+void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string strLoadSize, streamsize llMaxSize, streamoff llStart, int iThreadCount);
