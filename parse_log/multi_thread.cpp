@@ -126,16 +126,31 @@ int multi_thread()
 				llLastLinePos = 0;
 			}
 			file.clear();
-			file.seekg(0, ios::end);
+			file.seekg(0, ios::end); // FIXME 必需确保是换行符
 			llEndFilePos = file.tellg();
 			llFileSize = llEndFilePos - llLastLinePos;
+			/*
+			while (file.get() != '\n');
+			{
+				++llFileSize;
+			}
+			*/
 			llStart = llLastLinePos; // 开始读入位置回退到最末尾一行的行首
 		}
 		else
 		{
 			// TODO
 			cout << "非req的行" << endl;
-			// llFileSize = 0;
+			file.clear();
+			file.seekg(0, ios::end);
+			llLastLinePos = file.tellg();
+			Sleep(500);
+			file.clear();
+			file.seekg(0, ios::end);
+			llEndFilePos = file.tellg();
+			llFileSize = llEndFilePos - llLastLinePos;
+			llStart = llLastLinePos; // 开始读入位置回退到最末尾一行的行首
+
 		}
 
 		cout << "需分析文件大小: " << llFileSize << "\t分析开始位置: " << llLastLinePos << "\t分析结束位置: " << llEndFilePos << endl; // debug
@@ -147,18 +162,6 @@ int multi_thread()
 		delete loadedFile[1];
 		file.close();
 
-		// TODO 组合map
-		/*
-		for (int i = 0; i < iThreadCount; ++i)
-		{
-			LogMapKeySet p = (pLogMaps + i)->begin();
-			LogMapKeySet end = (pLogMaps + i)->end();
-			for (; p != end; ++p)
-			{
-				allLogMap.insert(pair<string, string>(p->first, p->second));
-			}
-		}
-		*/
 	}
 	t_end = clock();
 
@@ -277,9 +280,9 @@ void TimeoutScan(unordered_multimap<string, string> &mymap)
 	{
 		if (mymap.count(begin->first) < 2)
 		{
-			// time_t MsgTimeMs = clUtils.StringToMs(begin->second);
-			time_t MsgTimeMs = clUtils.StringToMs(begin->second, 31, 45);
 			time_t CurrTimeMs = clUtils.GetCurrentTimeMs();
+			// time_t MsgTimeMs = clUtils.StringToMs(begin->second);
+			time_t MsgTimeMs = clUtils.StringToMs(begin->second, 40, 53);
 			
 			// 获取配置
 			if ((utilsError = clUtils.GetConfigValue(strLbmTimeOut, "LbmTimeOut")) != UTILS_RTMSG_OK )
@@ -316,6 +319,10 @@ void TimeoutScan(unordered_multimap<string, string> &mymap)
 				}
 				*/
 			}
+		}
+		else
+		{
+			// 删除同时存在req、ans的
 		}
 	}
 }
@@ -420,7 +427,7 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 			bNeedWait = false;
 
 			Sleep(500);// 文件扫描时间
-
+			file.clear();
 			file.seekg(0, ios::end); // 文件指针指到文件末尾
 			streampos pNewPos = file.tellg(); // 新的文件指针
 			llFileSize = pNewPos - pCurrPos;
@@ -436,6 +443,8 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 		}
 
 		// TimeOutScan
+		// 阻塞主线程,等待上一个数据块分析结束,再对下一数据块进行分析
+
 		for (int i = 0; i < iThreadCount; ++i)
 		{
 			LogMapKeySet p = (pLogMaps + i)->begin();

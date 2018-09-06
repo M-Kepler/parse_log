@@ -76,6 +76,7 @@ time_t CUtils::StringToMs(string strOrig, int iStart, int iEnd)
 	int len = iEnd - iStart;
 
 	formate = (char*)"%4d%2d%2d-%2d%2d%2d";
+	cout << strOrig << "\n" << iStart << endl << len << endl;
 	str = strOrig.substr(iStart, len);
 #ifdef OS_IS_LINUX
 	sscanf(str.c_str(), formate, &year, &month, &day, &hour, &minute, &second);
