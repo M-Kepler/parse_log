@@ -57,12 +57,16 @@ public:
 
 	/*
 	 * @brief	日志行字符串转毫秒时间
-	 * @param   str				字符串(前15位表示时间,16-19。。。)
+	 * @param   str				整个字符串
+								(开始位置往后15位表示时间,如果有>15位,则16-19为毫秒)
+								时间格式为:formate = (char*)"%4d%2d%2d-%2d%2d%2d
 	 * @param   int				字符串(时间开始位置)
 	 * @param   int				字符串(时间结束位置)
 	 * @return	time_t			返回毫秒级时间
 	 */
-	time_t StringToMs(string strOrig, int iStart = 0, int iEnd = 19);
+	// u版runlog : time_t StringToMs(string strOrig, int iStart = 0, int iEnd = 19);
+	// creator.out 测试数据:
+	time_t StringToMs(string strOrig, int iStart = 39, int iEnd = 54);
 
 
 	/*
@@ -85,18 +89,11 @@ public:
 	/*
 	 * @brief	获取配置
 	 * @param	strValue			对应的值的引用
-	 * @param   strKey				键值
+	 * @param   strKey				key值
 	 * @param   strSection			节点, 默认[CONFIG]
-	 * @return	strValue			对应的值
+	 * @return	strValue			value值
 	 */
 	UtilsError GetConfigValue(string & strValue, string strKey, string strSection="CONFIG");
-
-
-	// XXX 
-	// 有没有必要重载这个函数以适应获取不同类型值的配置
-	// 不重载直接用上面那个也可以, 不过如果需要int类型的话还需要stoi转换一下
-	// UtilsError GetConfigValue(int& iValue, string strKey, string strSection ="CONFIG");
-
 
 
 	/*

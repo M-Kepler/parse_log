@@ -1,5 +1,31 @@
 
 
+# ReadMe
+
+## 默认参数说明
+
+* 函数 StringToMs
+
+```c++
+iStart, iEnd两个默认参数分别表示时间在字符串中的开始和结束位置
+time_t StringToMs(string strOrig, int iStart = 0, int iEnd = 19);
+且时间格式为: formate = (char*)"%4d%2d%2d-%2d%2d%2d";
+如:
+u版runlog
+20180202-090551-318351 18207    99 Req: LBM=L0106002,MsgI
+20180202-090551-318 时间开始结束位置为0 - 19
+```
+
+* 函数 GetConfigValue
+
+```
+默认取的是[CONFIG]节点下的配置信息
+```
+
+
+
+
+
 # 任务列表
 
 

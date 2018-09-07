@@ -103,9 +103,10 @@ void ParseMsgLine(vector<string> vecStr, int id, string strKey = "MsgId");
 /*
  * @brief	定时扫描map
  * @param   mymap			所有日志的map
+ * @param   iAnsNum			一条req可对应的ans串的数量
  * @return	return			return_command
  */
-void TimeoutScan(unordered_multimap<string, string> &mymap);
+void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum);
 
 /*
  * @brief	关键处理函数
@@ -116,6 +117,8 @@ void TimeoutScan(unordered_multimap<string, string> &mymap);
  * @param   llMaxSize		实际一次可加载大小(防截位后的大小)
  * @param   llStart			文件处理开始指针
  * @param   iThread			处理线程数
+ * @param   iAnsNum			一条req可对应的ans串的数量
+ * @param   iScanTime		文件间隔扫描时间
  * @return	return			return_command
  */
-void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string strLoadSize, streamsize llMaxSize, streamoff llStart, int iThreadCount);
+void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string strLoadSize, streamsize llMaxSize, streamoff llStart, int iThreadCount, int iAnsNum, int iScanTime);
