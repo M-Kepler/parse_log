@@ -64,8 +64,6 @@ int multi_thread()
 	loadedFile[0] = new char[llMaxSize];
 	loadedFile[1] = new char[llMaxSize];
 
-	clock_t t_start, t_end;
-	t_start = clock();
 
 
 	// 读取文件
@@ -149,7 +147,8 @@ int multi_thread()
 			file.clear();
 			file.seekg(0, ios::end);
 			llLastLinePos = file.tellg();
-			Sleep(500);
+			// XXX WIN
+			Sleep(iScanTime);
 			file.clear();
 			file.seekg(0, ios::end);
 			llEndFilePos = file.tellg();
@@ -167,9 +166,6 @@ int multi_thread()
 		file.close();
 
 	}
-	t_end = clock();
-
-	cout << "\r\nAll completed in " << t_end - t_start << "ms." << endl; // debug
 	return 0;
 }
 
@@ -177,7 +173,8 @@ int multi_thread()
 streamsize inline getRealSize(ifstream *file, streamoff llStart, streamsize llSize)
 {
 	file->seekg(llStart + llSize);
-	while (file->get() != '\n')
+	// while (file->get() != '\n')
+	while ((file->get() != '\n') || (file->get() != '\0'))
 	{
 		++llSize;
 	}
@@ -290,7 +287,8 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 
 			if ((CurrTimeMs - MsgTimeMs) > iLbmTimeOut)
 			{
-				cout << "超时+发送+删除\t" << CurrTimeMs << "\t" << MsgTimeMs << "\t" << begin->first << endl;
+				// ans串可能在下一个内存块,所以超时才删
+				cout << "超时+发送+删除\t" << CurrTimeMs << "\t" << MsgTimeMs << "\t" << CurrTimeMs - MsgTimeMs << "\t" << begin->second << endl;
 				// 发送并删除
 				/*
 				cout << "当前时间(ms): " << CurrTimeMs << "\t" << "Msg时间(ms): " << MsgTimeMs << endl;
@@ -313,7 +311,10 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 					LOG(INFO) << strResponse << endl;
 				}
 				*/
-				begin = mymap.erase(begin);
+
+				// begin = mymap.erase(begin);
+				begin++;
+
 			}
 			else
 			{
@@ -335,6 +336,9 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 
 void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string strLoadSize, streamsize llMaxSize, streamoff llStart, int iThreadCount, int iAnsNum, int iScanTime)
 {
+
+	clock_t t_start, t_end;
+
 	bool bBufferIndex = 0; // 缓存下标
 	bool bNeedWait = false;
 	streamoff llThreadIndex, llThreadPart;
@@ -344,6 +348,8 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 
 	while (llFileSize)
 	{
+		t_start = clock();
+
 		// llRealSize = llFileSize > llMaxSize ? getRealSize(&file, llStart, llLoadSize) : llFileSize;
 		llRealSize = llFileSize > llMaxSize ? getRealSize(&file, llStart, stoll(strLoadSize)) : llFileSize;
 		llThreadIndex = 0;
@@ -367,7 +373,6 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 				if (threads[i].joinable())
 				{
 					threads[i].join();
-				
 				}
 			}
 		}
@@ -375,6 +380,24 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 		{
 			bNeedWait = true;
 		}
+
+		for (int i = 0; i < iThreadCount; ++i)
+		{
+			LogMapKeySet p = (pLogMaps + i)->begin();
+			LogMapKeySet end = (pLogMaps + i)->end();
+			for (; p != end; ++p)
+			{
+				allLogMap.insert(pair<string, string>(p->first, p->second));
+			}
+			// 清理掉线程的子map
+			LogMap *ThreadMap = pLogMaps + i;
+			ThreadMap->clear();
+		}
+		TimeoutScan(allLogMap, iAnsNum);
+
+		t_end = clock();
+		cout << "==============-------------------------============== Scan Complete: " << t_end - t_start << "ms." << "==============-------------------------==============" << endl; // debug
+
 
 		for (int i = 1; i < iThreadCount; ++i)
 		{
@@ -431,8 +454,9 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 					threads[i].join();
 				}
 			}
-			bNeedWait = false;
+			// bNeedWait = false;
 
+			// XXX WIN
 			Sleep(iScanTime);
 			
 			file.clear();
@@ -452,7 +476,7 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 
 		// TimeOutScan
 		// 阻塞主线程,等待上一个数据块分析结束,再对下一数据块进行分析
-
+		/*
 		for (int i = 0; i < iThreadCount; ++i)
 		{
 			LogMapKeySet p = (pLogMaps + i)->begin();
@@ -466,6 +490,7 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 			ThreadMap->clear();
 		}
 		TimeoutScan(allLogMap, iAnsNum);
+		*/
 	}
 
 }

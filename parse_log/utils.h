@@ -4,13 +4,19 @@
 #define _UTILS_H
 
 #include <time.h>
+
+// XXX WINDOWS ONLY
 #include <atltime.h>
+
 #include <iostream>
 #include <string>
 #include <fstream>
 #include "inifile.h"
 #include "log.h"
-#include "mylibcurl.h"
+
+// 这个封装用了很多windows的api
+// #include "mylibcurl.h"
+#include <curl/curl.h>
 
 using namespace std;
 using namespace inifile;
@@ -66,17 +72,18 @@ public:
 	 */
 	// u版runlog : time_t StringToMs(string strOrig, int iStart = 0, int iEnd = 19);
 	// creator.out 测试数据:
-	time_t StringToMs(string strOrig, int iStart = 39, int iEnd = 54);
+	time_t StringToMs(string strOrig, int iStart = 39, int iEnd = 53);
 
 
 	/*
+	* @notice	XXX WINDOWS ONLY
 	* @brief	判断字符串前len位是否是有效日期
 	* @param    str				字符串
 	* @param	int				字符串(时间开始位置)
 	* @param	int				字符串(时间结束位置)
 	* @return	bool			是则返回 true, 否则返回false
 	*/
-	bool bCheckDate(string strOrig, int iStart, int iEnd);
+	// bool bCheckDate(string strOrig, int iStart, int iEnd);
 
 
 	/*

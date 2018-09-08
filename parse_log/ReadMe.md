@@ -22,6 +22,8 @@ u版runlog
 默认取的是[CONFIG]节点下的配置信息
 ```
 
+* bCheckData用了windows的头文件
+
 
 
 

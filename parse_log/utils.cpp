@@ -98,13 +98,14 @@ time_t CUtils::StringToMs(string strOrig, int iStart, int iEnd)
 	} 
 	else
 	{
-		// 20180202-091002-549327 取547为毫秒
+		// 20180202-091002-549327 取549为毫秒
 		time_t tm_ms = (tm_s * 1000) + stoi(strOrig.substr(iEnd + 1, 3)); // 转化为毫秒
 		return tm_ms;
 	}
 }
 
-
+// linux 下不可用
+/*
 bool CUtils::bCheckDate(string strOrig, int iStart, int iEnd)
 {
 	char* formate;
@@ -132,6 +133,7 @@ bool CUtils::bCheckDate(string strOrig, int iStart, int iEnd)
 		&& nSecond == t.GetSecond()
 		);
 }
+*/
 
 
 char * CUtils::GetConfigPath()
@@ -159,26 +161,6 @@ UtilsError CUtils::GetConfigValue(string & strValue, string strKey, string strSe
 }
 
 
-/*
-UtilsError CUtils::GetConfigValue(int& iValue, string strKey, string strSection)
-{
-	int iRetCode;
-	IniFile ini;
-	char * configpath = GetConfigPath();
-	iRetCode = ini.load(configpath);
-	if (iRetCode != RET_OK)
-	{
-		return UTILS_FILE_ERROR;
-	}
-	iRetCode = ini.getIntValue(strSection, strKey, iValue);
-	if (iRetCode != RET_OK)
-	{
-		return UTILS_GET_INI_ERROR;
-	}
-	return UTILS_RTMSG_OK;
-}
-*/
-
 
 time_t CUtils::GetCurrentTimeMs()
 {
@@ -187,7 +169,68 @@ time_t CUtils::GetCurrentTimeMs()
 	return currTime * 1000 + clock();
 }
 
+UtilsError CUtils::DoPost(char * pData, string &strResp)
+{
+	string name;
+	string value;
+	unsigned int uiPosKey;
+	UtilsError enumError;
+	CURLcode curlErrorCode;
 
+	char* pUrl;
+	int iPort;
+	int iTimeOut;
+	string strPort;
+	string strTimeOut;
+	string strHttpUrl; // http 地址
+	string strHttpHeader; // http 请求头
+	string strHttpRepeatNum; // 超时重发次数
+	string strHttpTimeOut; // 超时时间
+	UtilsError utilsError;
+
+	if ((utilsError = GetConfigValue(strHttpUrl, "HttpUrl", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = GetConfigValue(strPort, "HttpPort", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = GetConfigValue(strTimeOut, "HttpTimeOut", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = GetConfigValue(strHttpHeader, "HttpHeader", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = GetConfigValue(strHttpRepeatNum, "HttpRepeatNum", "CURL")) != UTILS_RTMSG_OK
+		)
+	{
+		LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
+		// FIXME // 异常抛出到界面
+		return utilsError;
+	}
+	else
+	{
+		pUrl = (char*)strHttpUrl.c_str();
+		iPort = stoi(strPort);
+		iTimeOut = stoi(strTimeOut);
+
+		curl_easy_setopt(pUrl, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.86 Safari/537.36");
+		curl_easy_setopt(pUrl, CURLOPT_PORT, iPort);
+		curl_easy_setopt(pUrl, CURLOPT_CONNECTTIMEOUT, iTimeOut); // 连接等待时间
+
+		uiPosKey = strHttpHeader.find(":");
+		if (uiPosKey != string::npos)
+		{
+			name = strHttpHeader.substr(1, uiPosKey);
+			value = strHttpHeader.substr(uiPosKey + 1, strHttpHeader.length() - 1);
+			string strHeader(name);
+			strHeader.append(": ");
+			strHeader.append(value);
+			struct curl_slist* headers = NULL;
+			curl_slist_append(headers, strHeader.c_str());
+			curl_easy_setopt(pUrl, CURLOPT_HTTPHEADER, headers);
+		}
+	}
+	curl_easy_setopt(pUrl, CURLOPT_POST, 1);
+	curl_easy_setopt(pUrl, CURLOPT_POSTFIELDS, pData); // Post请求的数据
+	curl_easy_setopt(pUrl, CURLOPT_URL, pUrl);
+	strResp = curl_easy_perform(pUrl); // 开始执行
+	return UTILS_RTMSG_OK;
+}
+
+// linux下不可用
+/*
 UtilsError CUtils::DoPost(char * pData, string &strResp)
 {
 	string name;
@@ -249,3 +292,4 @@ UtilsError CUtils::DoPost(char * pData, string &strResp)
 		return UTILS_RTMSG_OK;
 	}
 }
+*/

@@ -39,7 +39,7 @@
 #ifdef OS_IS_LINUX
 #define strtok_s strtok_r
 
-#define LPCSTR char*
+#define LPCSTR const char*
 #define LONG long
 #define LONGLONG long long
 #define HANDLE void*
