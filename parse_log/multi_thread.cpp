@@ -117,14 +117,23 @@ int multi_thread()
 
 		// 原有的日志不需要分析
 		char* strReq = (char*)"Req:";
-		file.seekg(0, ios::beg);
+		/*
+		file.clear();
+		file.seekg(0, ios::beg); // 从后往前读
+
+		// XXX 改为从后往前读一行
 		while (file.peek() != EOF)
 		{
-			// XXX 瓶颈
-			// 程序要获得最后一行, 肯定要把已有文件读完进去
-			// 让这个程序先运行就好了
 			getline(file, strLastLine);
 		}
+		*/
+		vector<string> vecTailLine;
+		utilsError = clUtils.TailLine(file, 1, vecTailLine);
+		if (utilsError != UTILS_RTMSG_OK)
+		{
+			abort();
+		}
+		strLastLine = vecTailLine[0];
 		iLineLen = strLastLine.length();
 		if (strstr(strLastLine.c_str(), strReq) != NULL)
 		{

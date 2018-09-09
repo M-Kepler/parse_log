@@ -130,6 +130,16 @@ public:
 	// UtilsError DoGet();
 
 
+	/*
+	 * @brief       获取文件最后n行,兼容单行和行尾有空行的情况
+	 * @param[in]   file			已打开的文件
+	 * @param[in]   iLineNu			需要获取的行数
+	 * @param[in]	&vector<string>	保存了从后往前的n行的vector
+	 * @return      错误码
+	 */
+	UtilsError TailLine(ifstream &file, int iLineNum, vector<string>& vecRetStr);
+
+
 
 private:
 	UtilsError _errorCode;

@@ -15,7 +15,8 @@ using namespace std;
 string strResp;
 char *loadedFile2[2];
 const char* filepath = "runlog_config.ini";
-const char* filename = "runlog0-3.1.log";
+// const char* filename = "runlog0-3.1.log";
+const char* filename = "test.log";
 
 mutex sLock;
 int i = 0;
@@ -54,6 +55,24 @@ int main(int argv, char* argc[])
 	{
 		cout << "open file fail" << endl;
 	}
+	vector<string> vecRetStr;
+	utileError = clUtils.TailLine(file, 3, vecRetStr);
+	if (utileError == UTILS_RTMSG_OK)
+	{
+		for (size_t i = 0; i < vecRetStr.size(); i++)
+		{
+			cout << vecRetStr[i] << endl;
+		}
+	}
+	else
+	{
+		cout << "获取文件最后n行失败" << endl;
+	}
+
+
+
+	multi_thread();
+
 	// 获取尾行
 	/*
 	else
@@ -208,7 +227,7 @@ int main(int argv, char* argc[])
 
 
 	// 获取当前时间
-	// cout << "当前时间(毫秒): " << clUtils.GetCurrentTimeMs() << endl;
+	/*cout << "当前时间(毫秒): " << clUtils.GetCurrentTimeMs() << endl;*/
 
 
 	// libcurl
@@ -253,8 +272,6 @@ int main(int argv, char* argc[])
 	}
 	*/
 
-
-	multi_thread();
 
 
 	// 线程同步

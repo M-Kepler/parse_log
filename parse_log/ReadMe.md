@@ -147,4 +147,32 @@ LIBRARY_PATH=/path/to/libcurl/lib
 	   但是, 这样也是很冗余的, 比如我n个文件需要记录日志, 就需要初始化n次....最好是一个全局变量通吃
    2.4 使用单例模式
 
-3. 
+3. 定位到文件最后一行,判断是req还是ans的坑
+   原本逻辑:
+   用getline读入文件,循环结束后得到的就是最后一行了
+   如果是req行, 则把指针移到最后一行的行尾, 然后再获取一下此刻的指：针
+   ```
+   		while (file.peek() != EOF)
+		{
+			getline(file, strLastLine);
+		}
+		iLineLen = strLastLine.length();
+
+		if (strstr(strLastLine.c_str(), strReq) != NULL)
+		{
+			file.clear();
+			// file.seekg(-(iLineLen + 1), ios::end); // XXX 这里+1是为了跳过换行符\n,但是当只有一行时, 行首是没有\n的
+			file.seekg(-(iLineLen), ios::end);
+			llLastLinePos = file.tellg();
+			if (llLastLinePos < 0)
+			{
+				llLastLinePos = 0;
+			}
+			file.clear();
+			file.seekg(0, ios::end);
+			llEndFilePos = file.tellg();
+			llFileSize = llEndFilePos - llLastLinePos;
+			llStart = llLastLinePos; // 开始读入位置回退到最末尾一行的行首
+		}
+
+   ```

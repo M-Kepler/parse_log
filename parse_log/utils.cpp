@@ -169,6 +169,57 @@ time_t CUtils::GetCurrentTimeMs()
 	return currTime * 1000 + clock();
 }
 
+
+
+UtilsError CUtils::TailLine(ifstream &file, int iLineNum, vector<string>& vecRetStr)
+{
+	int i;
+	string strLine;
+	streampos nCurentPos;
+
+	if (!file)
+	{
+		LOG(ERROR) << "获取文件最后" << iLineNum << "行失败" << endl;
+		LOG(ERROR) << "文件未打开" << endl;
+		return UTILS_FILE_ERROR;
+	}
+
+	// file.seekg(-2, file.cur);
+	file.seekg(-2, ios::end); //倒回最后两个字符处
+
+	for (i = 0; i < iLineNum; i++)
+	{
+		while (file.peek() != file.widen('\n'))
+		{
+			nCurentPos = file.tellg();
+			if (nCurentPos == 0)
+			{
+				break;
+			}
+			file.seekg(-1, file.cur);
+		}
+		//读到"\n"标识 ，表示已经有一行了
+		if (nCurentPos != 0)//倒回文件的开头，停止倒退
+		{
+			file.seekg(-1, file.cur);
+		}
+		else
+		{
+			break;
+		}
+	}
+	if (nCurentPos != 0)
+	{
+		file.seekg(2, file.cur);
+	}
+
+	while (getline(file, strLine))
+	{
+		vecRetStr.push_back(strLine);
+	}
+	return UTILS_RTMSG_OK;
+}
+
 UtilsError CUtils::DoPost(char * pData, string &strResp)
 {
 	string name;
@@ -228,6 +279,7 @@ UtilsError CUtils::DoPost(char * pData, string &strResp)
 	strResp = curl_easy_perform(pUrl); // 开始执行
 	return UTILS_RTMSG_OK;
 }
+
 
 // linux下不可用
 /*
