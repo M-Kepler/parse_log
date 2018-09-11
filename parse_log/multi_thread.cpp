@@ -183,7 +183,11 @@ streamsize inline getRealSize(ifstream *file, streamoff llStart, streamsize llSi
 {
 	file->seekg(llStart + llSize);
 	// while (file->get() != '\n')
-	while ((file->get() != '\n') || (file->get() != '\0'))
+	// FIXME 文件增长太快的时候, 这里会掉进死循环
+	// creator.out 如每2、3毫秒插入两条数据的时候可重现
+	// while ((file->get() != '\n') || (file->get() != '\0'))
+	// FIXME
+	while ((file->peek() != EOF) && ((file->get()!= '\n') || (file->get()!= '\0')))
 	{
 		++llSize;
 	}
@@ -195,6 +199,7 @@ streamsize inline getBlockSize(int iStep, streamoff llStart, streamsize llSize)
 {
 	char *p = loadedFile[iStep] + llStart + llSize;
 	// while (*p != '\n')// 不用\n是因为没有\n时会无限循环, 比如静态文件只有一行数据, 所以加上\0一起做判断
+	// FIXME 20180910 - 19:07
 	while (*p != '\n' && *p != '\0')
 	{
 		++llSize;
@@ -223,8 +228,10 @@ vector<string> ReadLineToVec(int iStep, streamoff llStart, streamsize llSize)
 	pFileBuffer = loadedFile[iStep];
 
 	sFileBuffer = pFileBuffer;
+	// 这个llSize有问题
 	sLineBuffer = sFileBuffer.substr(llStart, llSize);
-	pLineBuffer = (char*)sLineBuffer.data();
+	pLineBuffer = (char*)sLineBuffer.c_str();
+	string tmpLineBuffer = pLineBuffer;
 	vecStringLine.clear();
 
 	// XXX 换行符
@@ -236,6 +243,12 @@ vector<string> ReadLineToVec(int iStep, streamoff llStart, streamsize llSize)
 	while (strToken != NULL)
 	{
 		sLine.assign(strToken);
+		// test begin
+		if (sLine.length() < 60)
+		{
+			abort();
+		}
+		// test end
 		vecStringLine.push_back(sLine);
 		strToken = strtok_s(NULL, strDelim, &nextToken);
 	}
@@ -321,9 +334,9 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 				}
 				*/
 
-				// begin = mymap.erase(begin);
-				begin++;
-
+				// begin++;
+				begin = mymap.erase(begin);
+				begin = mymap.begin();
 			}
 			else
 			{
@@ -384,25 +397,26 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 					threads[i].join();
 				}
 			}
+			for (int i = 0; i < iThreadCount; ++i)
+			{
+				LogMapKeySet p = (pLogMaps + i)->begin();
+				LogMapKeySet end = (pLogMaps + i)->end();
+				for (; p != end; ++p)
+				{
+					allLogMap.insert(pair<string, string>(p->first, p->second));
+				}
+				// 清理掉线程的子map
+				LogMap *ThreadMap = pLogMaps + i;
+				ThreadMap->clear();
+			}
+
+			TimeoutScan(allLogMap, iAnsNum);
+
 		}
 		else
 		{
 			bNeedWait = true;
 		}
-
-		for (int i = 0; i < iThreadCount; ++i)
-		{
-			LogMapKeySet p = (pLogMaps + i)->begin();
-			LogMapKeySet end = (pLogMaps + i)->end();
-			for (; p != end; ++p)
-			{
-				allLogMap.insert(pair<string, string>(p->first, p->second));
-			}
-			// 清理掉线程的子map
-			LogMap *ThreadMap = pLogMaps + i;
-			ThreadMap->clear();
-		}
-		TimeoutScan(allLogMap, iAnsNum);
 
 		t_end = clock();
 		cout << "==============-------------------------============== Scan Complete: " << t_end - t_start << "ms." << "==============-------------------------==============" << endl; // debug
@@ -417,11 +431,11 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 
 			if (llThreadIndex != llRealSize) // 避免文件只有一行时getBlockSize报错
 			{
+				// FIXME
 				llFileLen = getBlockSize(bBufferIndex, llThreadIndex, llThreadPart);
 			}
 
-			// 若剩余行数少于线程数
-			// 还需要判断一下线程已处理的字符和该块数据的大小
+			// 若剩余行数少于线程数,还需要判断一下线程已处理的字符和该块数据的大小
 			if (llFileLen + llThreadIndex < llRealSize)
 			{
 				cout << "线程 " << i << " 开始读入位置llThreadIndex: " << llThreadIndex << "\t实际线程 " << i << " 读入大小llFileLen:" << llFileLen << endl; // debug
@@ -471,6 +485,12 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 			file.clear();
 			file.seekg(0, ios::end); // 文件指针指到文件末尾
 			streampos pNewPos = file.tellg(); // 新的文件指针
+			// test begin
+			if (file.peek() == '\n')
+			{
+				abort();
+			}
+			// test end
 			llFileSize = pNewPos - pCurrPos;
 			if (llFileSize < 0)
 			{
@@ -482,24 +502,7 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 			cout << "增长文件大小: " << llFileSize << endl; // debug
 			cout << "==============-------------------------==============" << endl;
 		}
-
-		// TimeOutScan
-		// 阻塞主线程,等待上一个数据块分析结束,再对下一数据块进行分析
-		/*
-		for (int i = 0; i < iThreadCount; ++i)
-		{
-			LogMapKeySet p = (pLogMaps + i)->begin();
-			LogMapKeySet end = (pLogMaps + i)->end();
-			for (; p != end; ++p)
-			{
-				allLogMap.insert(pair<string, string>(p->first, p->second));
-			}
-			// 清理掉线程的子map
-			LogMap *ThreadMap = pLogMaps + i;
-			ThreadMap->clear();
-		}
-		TimeoutScan(allLogMap, iAnsNum);
-		*/
+		
 	}
 
 }

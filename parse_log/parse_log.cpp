@@ -55,8 +55,13 @@ int main(int argv, char* argc[])
 	{
 		cout << "open file fail" << endl;
 	}
+	// multi_thread();
+
+
+	// 获取最后n行
+	/*
 	vector<string> vecRetStr;
-	utileError = clUtils.TailLine(file, 3, vecRetStr);
+	utileError = clUtils.TailLine(file, 1, vecRetStr);
 	if (utileError == UTILS_RTMSG_OK)
 	{
 		for (size_t i = 0; i < vecRetStr.size(); i++)
@@ -68,10 +73,8 @@ int main(int argv, char* argc[])
 	{
 		cout << "获取文件最后n行失败" << endl;
 	}
+	*/
 
-
-
-	multi_thread();
 
 	// 获取尾行
 	/*
@@ -227,7 +230,9 @@ int main(int argv, char* argc[])
 
 
 	// 获取当前时间
-	/*cout << "当前时间(毫秒): " << clUtils.GetCurrentTimeMs() << endl;*/
+	/*
+	cout << "当前时间(毫秒): " << clUtils.GetCurrentTimeMs() << endl;
+	*/
 
 
 	// libcurl
@@ -271,11 +276,6 @@ int main(int argv, char* argc[])
 		cout << "发post成功" << endl << "收到回复数据为:\n" << strResp << endl;
 	}
 	*/
-
-
-
-	// 线程同步
-
 
 	// 清理
 	delete loadedFile2[0];
