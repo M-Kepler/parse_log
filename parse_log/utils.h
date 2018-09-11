@@ -18,6 +18,10 @@
 // #include "mylibcurl.h"
 #include <curl/curl.h>
 
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/document.h>
+
 using namespace std;
 using namespace inifile;
 
@@ -67,7 +71,7 @@ public:
 								(开始位置往后15位表示时间,如果有>15位,则16-19为毫秒)
 								时间格式为:formate = (char*)"%4d%2d%2d-%2d%2d%2d
 	 * @param   int				字符串(时间开始位置)
-	 * @param   int				字符串(时间结束位置)
+	 * @param   int				字符串(秒级时间结束位置)
 	 * @return	time_t			返回毫秒级时间
 	 */
 	// u版runlog : time_t StringToMs(string strOrig, int iStart = 0, int iEnd = 19);
@@ -140,6 +144,22 @@ public:
 	UtilsError TailLine(ifstream &file, int iLineNum, vector<string>& vecRetStr);
 
 
+	/*
+	 * @brief       组装json串
+	 * @param[in]   strReqData		请求串
+	 * @param[in]   strAnsData		应答串(超时的串没有ans, 默认值设为空字符串)
+	 * @return      string			组装后的json
+	 */
+	string AssembleJson(string strReqData, string strAnsData = "");
+
+
+	/*
+	 * @brief       切割字符串
+	 * @param[in]   strOrig			原始字符串
+	 * @param[in]   strSplit		分隔符/串
+	 * @return      vector<string>	返回子串
+	 */
+	vector<string> SplitString(string strOrig, string strSplit);
 
 private:
 	UtilsError _errorCode;

@@ -287,6 +287,7 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 {
 	int iLbmTimeOut;
 	string strLbmTimeOut;
+	string strPostData;
 	auto begin = mymap.begin();
 	auto end = mymap.end();
 	cout << "\n==============-------------------------==============" << "allLogMap.size():   " << allLogMap.size() << "==============-------------------------==============" << endl;
@@ -311,10 +312,14 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 			{
 				// ans串可能在下一个内存块,所以超时才删
 				cout << "超时+发送+删除\t" << CurrTimeMs << "\t" << MsgTimeMs << "\t" << CurrTimeMs - MsgTimeMs << "\t" << begin->second << endl;
+				strPostData = clUtils.AssembleJson(begin->second);
+				cout << "\n==============-------------------------==============" << "发送的数据为:   " << "==============-------------------------==============" << endl;
+				cout << strPostData << endl;
+
 				// 发送并删除
 				/*
-				cout << "当前时间(ms): " << CurrTimeMs << "\t" << "Msg时间(ms): " << MsgTimeMs << endl;
-				char* pMsgData = (char*)begin->second.c_str();
+				char* pMsgData = (char*)strPostData.c_str();
+				// utilsError = clUtils.DoPost(pMsgData, strResponse);
 				utilsError = clUtils.DoPost(pMsgData, strResponse);
 				LOG(INFO) << "\n==============-------------------------==============" << "发送的数据为:   " << "==============-------------------------==============" << endl;
 				LOG(INFO) << pMsgData << endl;
@@ -427,6 +432,7 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 			if (llThreadIndex != 0)
 			{
 				llThreadIndex += 1; // 下一个线程读取的开始位置, 跳过\n字符
+				// llThreadIndex += 2; // 下一个线程读取的开始位置, 跳过\n字符
 			}
 
 			if (llThreadIndex != llRealSize) // 避免文件只有一行时getBlockSize报错

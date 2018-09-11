@@ -280,6 +280,162 @@ UtilsError CUtils::DoPost(char * pData, string &strResp)
 	return UTILS_RTMSG_OK;
 }
 
+vector<string> CUtils::SplitString(string strOrig, string strSplit)
+{
+	char *pDelim = (char*)strSplit.c_str();
+	char *strToken = NULL;
+	char *nextToken = NULL;
+	string sLine;
+	vector <string> vecStringLine;
+	vecStringLine.clear();
+
+	strToken = strtok_s((char*)strOrig.c_str(), pDelim, &nextToken);
+	while (strToken != NULL)
+	{
+		sLine.assign(strToken);
+		vecStringLine.push_back(sLine);
+		strToken = strtok_s(NULL, pDelim, &nextToken);
+	}
+	return vecStringLine;
+}
+
+string CUtils::AssembleJson(string strReqData, string strAnsData)
+{
+	bool isEmpty;
+	string strReqBuf;
+	vector<string> vecStrBuf;
+	vector<string> vecStrSubBuf;
+	rapidjson::StringBuffer strBuffer;
+	rapidjson::Writer<rapidjson::StringBuffer> writer(strBuffer);
+
+	if (strAnsData.empty())
+	{
+		isEmpty = true;
+	}
+	else
+	{
+		isEmpty = false;
+	}
+
+	writer.StartObject();
+	writer.String("LBM_CODE");
+	writer.String((char*)GetMsgValue(strReqData, "LBM").c_str());
+	writer.String("MsgId");
+	writer.String((char*)GetMsgValue(strReqData, "MsgId").c_str());
+
+	writer.String("ReqTime");
+	// writer.String((char*)strReqData.substr(0, 22).c_str());
+	writer.String((char*)strReqData.substr(39, 19).c_str());
+
+	// 切割Buf
+	strReqBuf = GetMsgValue(strReqData, "Buf");
+	vecStrBuf = SplitString(strReqBuf, "&");
+	for (size_t i = 0; i < vecStrBuf.size(); i++)
+	{
+		vecStrSubBuf = SplitString(vecStrBuf[i], "=");
+		writer.String(vecStrSubBuf[0].c_str());
+		writer.String(vecStrSubBuf[1].c_str());
+	}
+
+	// XXX 如果是错误的请求
+	if (!isEmpty)
+	{
+		// writer.String((char*)strAnsData.substr(0, 22).c_str());
+		writer.String("AnsTime");
+		writer.String(strAnsData.substr(39, 19).c_str());
+		writer.String("AnsRet1");
+		writer.String(GetMsgValue(strAnsData, "&_1", "&_2").c_str());
+		writer.String("AnsRet2");
+		writer.String(GetMsgValue(strAnsData, "&_2", "`").c_str()); // XXX `字符是为了截取&_2往后的字符串
+	}
+	else
+	{
+		writer.String("AnsTime");
+		writer.String("");
+		writer.String("AnsRet1");
+		writer.String("");
+		writer.String("AnsRet2");
+		writer.String("");
+	}
+	writer.EndObject();
+
+	string strJson = strBuffer.GetString();
+	return strJson;
+}
+
+/*
+
+string CUtils::AssembleJson(string strReqData, string strAnsData)
+{
+	bool isEmpty;
+	if (strAnsData.empty())
+	{
+		isEmpty = true;
+	}
+	else
+	{
+		isEmpty = false;
+	}
+
+	rapidjson::StringBuffer strBuffer;
+	rapidjson::Writer<rapidjson::StringBuffer> writer(strBuffer);
+	writer.StartObject();
+	writer.String("LBM_CODE");
+	writer.String((char*)GetMsgValue(strReqData, "LBM").c_str());
+	writer.String("MsgId");
+	writer.String((char*)GetMsgValue(strReqData, "MsgId").c_str());
+
+	writer.String("Req");
+	writer.StartObject();
+	writer.String("ReqTime");
+	// writer.String((char*)strReqData.substr(0, 22).c_str());
+	writer.String((char*)strReqData.substr(39, 19).c_str());
+	writer.String("ReqDetail");
+	writer.String((char*)GetMsgValue(strReqData, "Buf").c_str());
+	writer.EndObject();
+
+	// XXX 如果是错误的请求
+	writer.String("Ans");
+	writer.StartObject();
+	writer.String("AnsTime");
+	if (!isEmpty)
+	{
+		// writer.String((char*)strAnsData.substr(0, 22).c_str());
+		writer.String((char*)strAnsData.substr(39, 19).c_str());
+	}
+	else
+	{
+		writer.String("");
+	}
+
+	// 解析错误码
+	writer.String("AnsRet1");
+	if (!isEmpty)
+	{
+		writer.String((char*)GetMsgValue(strAnsData, "&_1", "&_2").c_str());
+	}
+	else
+	{
+		writer.String("");
+	}
+	// 错误信息
+	writer.String("AnsRet2");
+	if (!isEmpty)
+	{
+		writer.String(GetMsgValue(strAnsData, "&_2", "·").c_str());
+	}
+	else
+	{
+		writer.String("");
+	}
+	// XXX
+	writer.EndObject();
+	writer.EndObject();
+
+	string strJson = strBuffer.GetString();
+	return strJson;
+}
+*/
 
 // linux下不可用
 /*

@@ -84,7 +84,7 @@
       <PreprocessorDefinitions>CURL_STATICLIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/D "_CRT_SECURE_NO_DEPRECATE" %(AdditionalOptions)</AdditionalOptions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <AdditionalIncludeDirectories>C:\Users\M-Kepler\source\repos\parse_log\libcurl\windows\include;C:\Users\M-Kepler\source\repos\parse_log\glog\windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\M-Kepler\source\repos\parse_log\;C:\Users\M-Kepler\source\repos\parse_log\libcurl\windows\include;C:\Users\M-Kepler\source\repos\parse_log\glog\windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>C:\Users\M-Kepler\source\repos\parse_log\libcurl\windows\debug\lib;C:\Users\M-Kepler\source\repos\parse_log\glog\windows\debug\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
