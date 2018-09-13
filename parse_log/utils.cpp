@@ -247,7 +247,7 @@ UtilsError CUtils::DoPost(char * pData, string &strResp)
 		)
 	{
 		LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
-		// FIXME // 异常抛出到界面
+		// TODO 异常抛出
 		return utilsError;
 	}
 	else
@@ -324,6 +324,7 @@ string CUtils::AssembleJson(string strReqData, string strAnsData)
 	writer.String((char*)GetMsgValue(strReqData, "MsgId").c_str());
 
 	writer.String("ReqTime");
+	// XXX 这个时间的起点和长度要改
 	// writer.String((char*)strReqData.substr(0, 22).c_str());
 	writer.String((char*)strReqData.substr(39, 19).c_str());
 
@@ -337,7 +338,6 @@ string CUtils::AssembleJson(string strReqData, string strAnsData)
 		writer.String(vecStrSubBuf[1].c_str());
 	}
 
-	// XXX 如果是错误的请求
 	if (!isEmpty)
 	{
 		// writer.String((char*)strAnsData.substr(0, 22).c_str());
@@ -362,80 +362,6 @@ string CUtils::AssembleJson(string strReqData, string strAnsData)
 	string strJson = strBuffer.GetString();
 	return strJson;
 }
-
-/*
-
-string CUtils::AssembleJson(string strReqData, string strAnsData)
-{
-	bool isEmpty;
-	if (strAnsData.empty())
-	{
-		isEmpty = true;
-	}
-	else
-	{
-		isEmpty = false;
-	}
-
-	rapidjson::StringBuffer strBuffer;
-	rapidjson::Writer<rapidjson::StringBuffer> writer(strBuffer);
-	writer.StartObject();
-	writer.String("LBM_CODE");
-	writer.String((char*)GetMsgValue(strReqData, "LBM").c_str());
-	writer.String("MsgId");
-	writer.String((char*)GetMsgValue(strReqData, "MsgId").c_str());
-
-	writer.String("Req");
-	writer.StartObject();
-	writer.String("ReqTime");
-	// writer.String((char*)strReqData.substr(0, 22).c_str());
-	writer.String((char*)strReqData.substr(39, 19).c_str());
-	writer.String("ReqDetail");
-	writer.String((char*)GetMsgValue(strReqData, "Buf").c_str());
-	writer.EndObject();
-
-	// XXX 如果是错误的请求
-	writer.String("Ans");
-	writer.StartObject();
-	writer.String("AnsTime");
-	if (!isEmpty)
-	{
-		// writer.String((char*)strAnsData.substr(0, 22).c_str());
-		writer.String((char*)strAnsData.substr(39, 19).c_str());
-	}
-	else
-	{
-		writer.String("");
-	}
-
-	// 解析错误码
-	writer.String("AnsRet1");
-	if (!isEmpty)
-	{
-		writer.String((char*)GetMsgValue(strAnsData, "&_1", "&_2").c_str());
-	}
-	else
-	{
-		writer.String("");
-	}
-	// 错误信息
-	writer.String("AnsRet2");
-	if (!isEmpty)
-	{
-		writer.String(GetMsgValue(strAnsData, "&_2", "·").c_str());
-	}
-	else
-	{
-		writer.String("");
-	}
-	// XXX
-	writer.EndObject();
-	writer.EndObject();
-
-	string strJson = strBuffer.GetString();
-	return strJson;
-}
-*/
 
 // linux下不可用
 /*
@@ -467,7 +393,7 @@ UtilsError CUtils::DoPost(char * pData, string &strResp)
 		)
 	{
 		LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
-		// FIXME // 异常抛出到界面
+		// TODO 异常抛出
 		return utilsError;
 	}
 	else
