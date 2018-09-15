@@ -1,14 +1,11 @@
-
 #include <iostream>
 #include <thread>
 #include <mutex>
 #include "inifile.h"
 #include "multi_thread.h"
-#include "utils.h"
 #include "log.h"
 #include <curl/curl.h>
 #include "mylibcurl.h"
-
 using namespace std;
 
 
@@ -30,8 +27,39 @@ void test()
 	}
 }
 
+std::string WString2String(const std::wstring& ws)
+{
+	std::string strLocale = setlocale(LC_ALL, "");
+	const wchar_t* wchSrc = ws.c_str();
+	size_t nDestSize = wcstombs(NULL, wchSrc, 0) + 1;
+	char *chDest = new char[nDestSize];
+	memset(chDest, 0, nDestSize);
+	wcstombs(chDest, wchSrc, nDestSize);
+	std::string strResult = chDest;
+	delete[]chDest;
+	setlocale(LC_ALL, strLocale.c_str());
+	return strResult;
+}
+
+std::wstring String2WString(const std::string& s)
+{
+	std::string strLocale = setlocale(LC_ALL, "");
+	const char* chSrc = s.c_str();
+	size_t nDestSize = mbstowcs(NULL, chSrc, 0) + 1;
+	wchar_t* wchDest = new wchar_t[nDestSize];
+	wmemset(wchDest, 0, nDestSize);
+	mbstowcs(wchDest, chSrc, nDestSize);
+	std::wstring wstrResult = wchDest;
+	delete[]wchDest;
+	setlocale(LC_ALL, strLocale.c_str());
+	return wstrResult;
+}
+
+
 int main(int argv, char* argc[])
 {
+	// multi_thread();
+
 	bool step = 0;
 	streamsize loadsize = 250000;
 	loadedFile2[0] = new char[loadsize];
@@ -40,9 +68,9 @@ int main(int argv, char* argc[])
 
 	CGlog *p_glog = CGlog::GetInstance();
 
-	string str_req = "20180430-211359-522345 18225    99 Req: LBM=L0301002, MsgId=0000000100F462171E4D4B25, Len=299, Buf=_ENDIAN=0&F_OP_USER=9999&F_OP_ROLE=2&F_SESSION=0123456789&F_OP_SITE=0050569e247d&F_OP_BRANCH=999&F_CHANNEL=0&USE_NODE_FUNC=106127&CUSTOMER=150165853&MARKET=1&BOARD=0";
 	string str_buf = "_ENDIAN=0&F_OP_USER=9999&F_OP_ROLE=2&F_SESSION=0123456789&F_OP_SITE=0050569e247d&F_OP_BRANCH=999&F_CHANNEL=0&USE_NODE_FUNC=522210&CUSTOMER=180022892&MARKET=0&BOARD=0&SECU_ACC=0139680203&NO_CHECK_STATUS=1";
-	string str_ans = "20180719-094803-110762 12343    98 Ans: LBM=L1160005, MsgId=000001050001D55B1F297DD2, Len=792, Cost=161, Buf=&_1=0, 0, 业务程序运行正常, &_2=13863, 2, 21, 开户权限组<营业部>, 0, 10012, 2011-07-11 17:12:43.299541";
+	string str_req = "20180430-211359-522345-18225    99 Req: LBM=L0301002, MsgId=0000000100F462171E4D4B25, Len=299, Buf=_ENDIAN=0&F_OP_USER=9999&F_OP_ROLE=2&F_SESSION=0123456789&F_OP_SITE=0050569e247d&F_OP_BRANCH=999&F_CHANNEL=0&USE_NODE_FUNC=106127&CUSTOMER=150165853&MARKET=1&BOARD=0";
+	string str_ans = "20180719-094803-110762-12343    98 Ans: LBM=L1160005, MsgId=000001050001D55B1F297DD2, Len=792, Cost=161, Buf=&_1=0, 0, 业务程序运行正常, &_2=13863, 2, 21, 开户权限组<营业部>, 0, 10012, 2011-07-11 17:12:43.299541";
 
 	// 读取文件
 	CUtils clUtils;
@@ -56,7 +84,80 @@ int main(int argv, char* argc[])
 	{
 		cout << "open file fail" << endl;
 	}
-	multi_thread();
+
+
+	// gsoap
+	/*
+	const char* addr = "http://192.168.50.245/webapp/services/SoapService";
+	SoapServiceSoapBindingProxy proxy(addr, SOAP_C_UTFSTRING);
+	ns1__doService *info = new ns1__doService();
+	ns1__doServiceResponse *response = new ns1__doServiceResponse();
+
+
+	info->requestXml = new string(strJson);
+	int iRetCode = proxy.doService(info, *response);
+	if (iRetCode == SOAP_OK)
+	{
+		cout  << "SOAP_OK:" << SOAP_OK << ";RET:" << iRetCode << ";RETMSG:" << *(response->return_) << endl;
+	}
+	else
+	{
+		LOG(ERROR) << "Lbm Risk Warning Error" << endl;
+	}
+	*/
+
+	// CUtils::AssembleJson
+	/*
+	string strJson = clUtils.AssembleJson(str_req, str_ans, 0, 19);
+	cout << clUtils.AssembleJson(str_req, str_ans, 0, 19) << endl;
+	string strResp;
+	clUtils.WebAgent(strJson, strResp);
+	cout << strResp;
+	*/
+
+	//  libcurl 提交 xml 给 webservice
+	/*
+	char* pUrl;
+	int iPort;
+	int iTimeOut;
+	string strPort;
+	string strTimeOut;
+	string strHttpUrl; // url 地址
+	string strServiceName; // 服务名
+	string strFullUrl; // 完整 url
+	string strHttpHeader; // 请求头
+	string strHttpRepeatNum; // 超时重发次数
+	string strHttpTimeOut; // 超时时间
+	UtilsError utilsError;
+
+	if ((utilsError = clUtils.GetConfigValue(strHttpUrl, "HttpUrl", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = clUtils.GetConfigValue(strServiceName, "ServiceName", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = clUtils.GetConfigValue(strPort, "HttpPort", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = clUtils.GetConfigValue(strTimeOut, "HttpTimeOut", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = clUtils.GetConfigValue(strHttpHeader, "HttpHeader", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = clUtils.GetConfigValue(strHttpRepeatNum, "HttpRepeatNum", "CURL")) != UTILS_RTMSG_OK
+		)
+	{
+		LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
+		// TODO 异常抛出
+		return utilsError;
+	}
+	else
+	{
+		pUrl = (char*)strFullUrl.c_str();
+		iPort = stoi(strPort);
+		iTimeOut = stoi(strTimeOut);
+	}
+	//使用方法：webservice_sdk_submit(URL, 2000,待发数据,FALSE,返回值注意外部删除);
+	char* pPostData = (char *)malloc(sizeof(char) * 20);
+	char** pRetData = (char **)malloc(sizeof(char*) * 20);
+	//for (int i = 0; i < 5; i++)
+	//{
+	//	pRetData[i] = new char[3];
+	//}
+	//memset(pRetData, 0, 3 * 5 * sizeof(char));
+	webservice_sdk_submit((char*)strHttpUrl.c_str(), iTimeOut, pPostData, FALSE, pRetData);
+	*/
 
 
 	// 获取最后n行

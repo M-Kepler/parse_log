@@ -1,5 +1,4 @@
 #include "multi_thread.h"
-#include "utils.h"
 
 char* loadedFile[2]; // 存放指向 char* 类型的指针的数组
 typedef unordered_multimap<string, string> LogMap;
@@ -407,13 +406,13 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 		// llThreadIndex = llFileSize - iLineLen - 1; // 减去最后一行与上一行之间的\n字符
 		llThreadPart = llRealSize / iThreadCount;
 
-		cout << "\n\n\n==============-------------------------==============-------------------------==============" << endl;
+		cout << "\n\n==============-------------------------==============-------------------------==============" << endl;
 		cout << "读入数据到 loadedFile[bBufferIndex]: " << bBufferIndex << endl; // debug
 		cout << "\n计划一次读入大小 llLoadSize: " << stoll(strLoadSize) << "\t实际一次读入大小 llRealSize: " << llRealSize << endl; // debug
 		// cout << "\n读入开始位置 llStart: " << llStart << "\t总文件剩余读取大小 llFileSize: " << llFileSize << endl;
 		cout << "\n读入开始位置 llStart: " << llStart << "\t总文件剩余读取大小 llFileSize: " << llFileSize << endl;
 		cout << "\n计划每个线程读入大小 llThreadPart: " << llThreadPart ; // debug
-		cout << "\n==============-------------------------==============-------------------------==============" << endl << endl << endl;
+		cout << "\n==============-------------------------==============-------------------------==============" << endl << endl;
 
 
 		// 读入 llRealSize 大小的文件数据到缓存 loadedFile[bBufferIndex] 中
@@ -517,6 +516,9 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 		}
 		else
 		{
+			cout << "\n============== ----------------------- ============== ----------------------- ==============";
+			cout << "\n============== ----------------------- 读入下一数据块 ----------------------- ==============";
+			cout << "\n============== ----------------------- ============== ----------------------- ==============" << endl;
 			for (int i = 0; i < iThreadCount; ++i)
 			{
 				if (threads[i].joinable())

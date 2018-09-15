@@ -22,6 +22,7 @@
 #include <rapidjson/writer.h>
 #include <rapidjson/document.h>
 
+
 using namespace std;
 using namespace inifile;
 
@@ -34,7 +35,7 @@ enum UtilsError
 	UTILS_FILE_ERROR = 100001,
 	UTILS_DATE_EMPTY = 200001,       // 数据为空　　
 	UTILS_DOC_FAILED = 200002,       // 序列化失败
-	UTILS_URL_ERROR =  300001
+	UTILS_WEBSERVICE_FAIL = 300001 // web service失败
 };
 
 
@@ -56,27 +57,26 @@ public:
 
 
 	/*
-	 * @brief	从请求/应答串中查找key对应的value值
+	 * @brief	从行中查找key("="号左边)对应的value("="号右边)值
 	 * @param	strOrig			待分割的字符串
 	 * @param	strKey			待查找的key
-	 * @param	strSplit			从key开始出现的第一个截取结束符;
-	 * @return	strRetValue		查找成功返回value,查找失败返回空字符串; 若从key开始到字符串结束没有找到str_split, 则返回key开始到字符串结束
+	 * @param	strSplit		截取符(从key开始出现的第一个strSplit)
+	 * @return	strRetValue		查找成功返回value,查找失败返回空字符串;
+								若从key到结束都没找到str_split,则返回key开始到字符串结束
 	 */
 	string GetMsgValue(string strOrig, string strKey, string strSplit = ",");
 
 
 	/*
-	 * @brief	日志行字符串转毫秒时间
+	 * @brief	行字符串转毫秒时间 (开始位置往后15位是日期时间,若>15位,则16-19为毫秒)
 	 * @param   str				整个字符串
-								(开始位置往后15位表示时间,如果有>15位,则16-19为毫秒)
-								时间格式为:formate = (char*)"%4d%2d%2d-%2d%2d%2d
-	 * @param   int				字符串(时间开始位置)
-	 * @param   int				字符串(秒级时间结束位置)
+								时间格式为:YYYYMMDD-HHMMSS; formate = (char*)"%4d%2d%2d-%2d%2d%2d
+	 * @param   int				字符串中时间开始位置
+	 * @param   int				字符串中秒级时间结束位置
 	 * @return	time_t			返回毫秒级时间
 	 */
-	// u版runlog : time_t StringToMs(string strOrig, int iStart = 0, int iEnd = 19);
-	// creator.out 测试数据:
-	time_t StringToMs(string strOrig, int iStart = 39, int iEnd = 53);
+	// XXX 这里的iStart为测试数据的起始位置, 实际中要改
+	time_t StringToMs(string strOrig, int iStart = 39, int iLen = 53);
 
 
 	/*
@@ -115,7 +115,7 @@ public:
 
 
 	/*
-	 * @brief	发http请求
+	 * @brief	发Http Post请求
 	 * @param	pData			数据
 	 * @param	strResp			收到的数据
 	 * @return	UtilsError		错误码
@@ -123,22 +123,20 @@ public:
 	UtilsError DoPost(char* pData, string &strResp);
 
 
-
 	/*
-	 * @brief	发送Get请求
-	 * @param   arg1			arg1_command
-	 * @param   arg2			arg2_command
-	 * @param   arg3			arg3_command
-	 * @return	return			return_command
+	 * @brief       调用webservice
+	 * @param[in]   strJsonData			发送的数据
+	 * @param[in]   &strResp			返回的数据
+	 * @return      string				返回的数据
 	 */
-	// UtilsError DoGet();
+	UtilsError WebServiceAgent(string strJsonData, string &strResp);
 
 
 	/*
-	 * @brief       获取文件最后n行,兼容单行和行尾有空行的情况
+	 * @brief       获取文件最后n行(兼容单行和行尾有空行的情况)
 	 * @param[in]   file			已打开的文件
 	 * @param[in]   iLineNu			需要获取的行数
-	 * @param[in]	&vector<string>	保存了从后往前的n行的vector
+	 * @param[in]	vector<string>&	保存了从后往前的n行的vector
 	 * @return      错误码
 	 */
 	UtilsError TailLine(ifstream &file, int iLineNum, vector<string>& vecRetStr);
@@ -147,10 +145,13 @@ public:
 	/*
 	 * @brief       组装json串
 	 * @param[in]   strReqData		请求串
-	 * @param[in]   strAnsData		应答串(超时的串没有ans, 默认值设为空字符串)
+	 * @param[in]   strAnsData		应答串(超时串没有ans, 默认值设为空字符串)
+	 * @param[in]	iStart			字符串中时间开始位置
+	 * @param[in]	iLen			字符串中时间长度, 如: 20180914-145814-608 则为 19
 	 * @return      string			组装后的json
 	 */
-	string AssembleJson(string strReqData, string strAnsData = "");
+	// XXX 这里的iStart为测试数据的起始位置, 实际中要改
+	string AssembleJson(string strReqData, string strAnsData = "", int iStart = 39, int iLen = 19);
 
 
 	/*
@@ -161,11 +162,23 @@ public:
 	 */
 	vector<string> SplitString(string strOrig, string strSplit);
 
+
+	void SoapProxyInit(struct soap* soap);
+
+
 private:
 	UtilsError _errorCode;
-	char* ConfigPath = (char*)"./runlog_config.ini";
-	int _errorLineNum;
-	string _errorStr;
+	char* m_ConfigPath = (char*)"./runlog_config.ini";
+	int m_iErrorLineNum;
+	string m_strErrorStr;
+	/* soap */
+	char m_szIsProxy[8 + 1];
+	char m_szProxyType[8 + 1];
+	char m_szProxyHost[32 + 1];	/* Proxy Server host name */
+	int m_iProxyPort;		/* Proxy Server port (default = 8080) */
+	char m_szProxyUserid[32 + 1];	/* Proxy Authorization user name */
+	char m_szProxyPasswd[32 + 1];	/* Proxy Authorization password */
+
 };
 
 

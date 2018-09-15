@@ -27,13 +27,22 @@
     <ClCompile Include="utils.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="test.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="log.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="mylibcurl.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="test.hpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="soapC.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="soapSoapServiceSoapBindingProxy.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="stdsoap2.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -41,6 +50,7 @@
     <None Include="runlog_config.ini" />
     <None Include="BugList.md" />
     <None Include="ReadMe.md" />
+    <None Include="SoapServiceSoapBinding.nsmap" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inifile.h">
@@ -62,6 +72,18 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="makefile" />
+    <ClInclude Include="soapH.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="soapSoapServiceSoapBindingProxy.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="soapStub.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="stdsoap2.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="runlog0.log" />

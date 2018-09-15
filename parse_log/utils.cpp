@@ -1,4 +1,7 @@
 #include "utils.h"
+/*gsoap*/
+#include "SoapServiceSoapBinding.nsmap"
+#include "soapSoapServiceSoapBindingProxy.h"
 
 
 // glog 单例
@@ -72,10 +75,10 @@ time_t CUtils::StringToMs(string strOrig, int iStart, int iEnd)
 	string str;
 	int year, month, day, hour, minute, second;
 	char * formate;
-	int len = iEnd - iStart;
+	int iLen = iEnd - iStart;
 
 	formate = (char*)"%4d%2d%2d-%2d%2d%2d";
-	str = strOrig.substr(iStart, len);
+	str = strOrig.substr(iStart, iLen);
 #ifdef OS_IS_LINUX
 	sscanf(str.c_str(), formate, &year, &month, &day, &hour, &minute, &second);
 #else
@@ -102,6 +105,7 @@ time_t CUtils::StringToMs(string strOrig, int iStart, int iEnd)
 		return tm_ms;
 	}
 }
+
 
 // linux 下不可用
 /*
@@ -137,7 +141,7 @@ bool CUtils::bCheckDate(string strOrig, int iStart, int iEnd)
 
 char * CUtils::GetConfigPath()
 {
-	return ConfigPath;
+	return m_ConfigPath;
 }
 
 
@@ -160,14 +164,12 @@ UtilsError CUtils::GetConfigValue(string & strValue, string strKey, string strSe
 }
 
 
-
 time_t CUtils::GetCurrentTimeMs()
 {
 	time_t currTime;
 	currTime = time(NULL);
 	return currTime * 1000 + clock();
 }
-
 
 
 UtilsError CUtils::TailLine(ifstream &file, int iLineNum, vector<string>& vecRetStr)
@@ -233,13 +235,16 @@ UtilsError CUtils::DoPost(char * pData, string &strResp)
 	int iTimeOut;
 	string strPort;
 	string strTimeOut;
-	string strHttpUrl; // http 地址
-	string strHttpHeader; // http 请求头
+	string strHttpUrl; // url 地址
+	string strServiceName; // 服务名
+	string strFullUrl; // 完整 url
+	string strHttpHeader; // 请求头
 	string strHttpRepeatNum; // 超时重发次数
 	string strHttpTimeOut; // 超时时间
 	UtilsError utilsError;
 
 	if ((utilsError = GetConfigValue(strHttpUrl, "HttpUrl", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = GetConfigValue(strServiceName, "ServiceName", "CURL")) != UTILS_RTMSG_OK
 		|| (utilsError = GetConfigValue(strPort, "HttpPort", "CURL")) != UTILS_RTMSG_OK
 		|| (utilsError = GetConfigValue(strTimeOut, "HttpTimeOut", "CURL")) != UTILS_RTMSG_OK
 		|| (utilsError = GetConfigValue(strHttpHeader, "HttpHeader", "CURL")) != UTILS_RTMSG_OK
@@ -252,7 +257,8 @@ UtilsError CUtils::DoPost(char * pData, string &strResp)
 	}
 	else
 	{
-		pUrl = (char*)strHttpUrl.c_str();
+		strFullUrl = strHttpUrl + strServiceName;
+		pUrl = (char*)strFullUrl.c_str();
 		iPort = stoi(strPort);
 		iTimeOut = stoi(strTimeOut);
 
@@ -280,6 +286,63 @@ UtilsError CUtils::DoPost(char * pData, string &strResp)
 	return UTILS_RTMSG_OK;
 }
 
+
+UtilsError CUtils::WebServiceAgent(string strJsonData, string &strResp)
+{
+	int iRetCode = 0;
+	int iRet = 0;
+	struct soap LbmRiskSoap;
+	char szResult[1024 + 1];
+	char szTemp[1024 + 1];
+	char szIdCode[32 + 1] = { 0 };
+	char szErrMsg[512 + 1] = { 0 };
+
+	string strWebServiceUrl; // url 地址
+	string strPort; // 端口
+	string strServiceName; // 服务名
+	string strFullUrl; // 完整 url
+	string strHttpHeader; // 请求头
+	UtilsError utilsError;
+
+	if ((utilsError = GetConfigValue(strWebServiceUrl, "WebServiceUrl", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = GetConfigValue(strServiceName, "ServiceName", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = GetConfigValue(strPort, "HttpPort", "CURL")) != UTILS_RTMSG_OK
+		)
+	{
+		LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
+		// TODO 异常抛出
+		return utilsError;
+	}
+
+	SoapServiceSoapBindingProxy proxy(strWebServiceUrl.c_str(), SOAP_C_UTFSTRING);
+	ns1__doService *pInput = new ns1__doService();
+	ns1__doServiceResponse *pstrResponse = new ns1__doServiceResponse();
+
+	pInput->requestXml = &strJsonData;
+
+	/*
+	soap_init(&LbmRiskSoap);
+	SoapProxyInit(&LbmRiskSoap);
+	soap_set_mode(&LbmRiskSoap, SOAP_C_UTFSTRING);
+	*/
+
+	iRetCode = proxy.doService(pInput, *pstrResponse);
+	if (iRetCode != SOAP_OK)
+	{
+		LOG(ERROR) << "webservice 调用失败!" << "\t错误码为: " << iRetCode << endl;
+		return UTILS_WEBSERVICE_FAIL;
+	}
+	else
+	{
+		// XXX 中文乱码
+		// XXX 返回的是json,还需要解析
+		strResp = *(pstrResponse->return_);
+		LOG(INFO) << "webservice 调用成功!"<< "\t发送给 webservice 的数据为 : " << strJsonData << endl;
+		LOG(INFO) << "webservice 返回的数据为: " << *(pstrResponse->return_) << endl;
+		return UTILS_RTMSG_OK;
+	}
+}
+
 vector<string> CUtils::SplitString(string strOrig, string strSplit)
 {
 	char *pDelim = (char*)strSplit.c_str();
@@ -299,14 +362,51 @@ vector<string> CUtils::SplitString(string strOrig, string strSplit)
 	return vecStringLine;
 }
 
-string CUtils::AssembleJson(string strReqData, string strAnsData)
+
+void CUtils::SoapProxyInit(struct soap *soap)
+{
+	if (strcmp(m_szIsProxy, "YES") == 0)
+	{
+		soap->proxy_host = m_szProxyHost;
+		soap->proxy_port = m_iProxyPort;
+		soap->proxy_userid = m_szProxyUserid;
+		soap->proxy_passwd = m_szProxyPasswd;
+	}
+}
+
+
+// 组装的Json格式如下
+/*
+{
+	"REQUESTS": [{
+		"REQ_COMM_DATA": {
+			"service": "IRMSLBMRISKWARNING",
+				"REGKEY_ID" : "CHECK_TICKET",
+				"LBM_CODE" : "L1190165",
+				"USER_CODE" : "1595156513"
+				...
+		}
+	}]
+}
+*/
+
+
+string CUtils::AssembleJson(string strReqData, string strAnsData, int iStart, int iLen)
 {
 	bool isEmpty;
 	string strReqBuf;
+	string strServiceName; // 服务名
+	UtilsError utilsError;
 	vector<string> vecStrBuf;
 	vector<string> vecStrSubBuf;
 	rapidjson::StringBuffer strBuffer;
 	rapidjson::Writer<rapidjson::StringBuffer> writer(strBuffer);
+
+	if ((utilsError = GetConfigValue(strServiceName, "ServiceName", "CURL")) != UTILS_RTMSG_OK)
+	{
+		LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
+		abort();
+	}
 
 	if (strAnsData.empty())
 	{
@@ -318,15 +418,24 @@ string CUtils::AssembleJson(string strReqData, string strAnsData)
 	}
 
 	writer.StartObject();
+	writer.String("REQUESTS");
+	writer.StartArray();
+	writer.StartObject();
+
+	writer.String("REQ_COMM_DATA");
+	writer.StartObject();
+
+	writer.String("service");
+	writer.String(strServiceName.c_str());
+	writer.String("REGKEY_ID");
+	writer.String("CHECK_TICKET");
+
 	writer.String("LBM_CODE");
 	writer.String((char*)GetMsgValue(strReqData, "LBM").c_str());
 	writer.String("MsgId");
 	writer.String((char*)GetMsgValue(strReqData, "MsgId").c_str());
-
 	writer.String("ReqTime");
-	// XXX 这个时间的起点和长度要改
-	// writer.String((char*)strReqData.substr(0, 22).c_str());
-	writer.String((char*)strReqData.substr(39, 19).c_str());
+	writer.String((char*)strReqData.substr(iStart, iLen).c_str());
 
 	// 切割Buf
 	strReqBuf = GetMsgValue(strReqData, "Buf");
@@ -338,11 +447,11 @@ string CUtils::AssembleJson(string strReqData, string strAnsData)
 		writer.String(vecStrSubBuf[1].c_str());
 	}
 
+
 	if (!isEmpty)
 	{
-		// writer.String((char*)strAnsData.substr(0, 22).c_str());
 		writer.String("AnsTime");
-		writer.String(strAnsData.substr(39, 19).c_str());
+		writer.String(strAnsData.substr(iStart, iLen).c_str());
 		writer.String("AnsRet1");
 		writer.String(GetMsgValue(strAnsData, "&_1", "&_2").c_str());
 		writer.String("AnsRet2");
@@ -357,7 +466,12 @@ string CUtils::AssembleJson(string strReqData, string strAnsData)
 		writer.String("AnsRet2");
 		writer.String("");
 	}
-	writer.EndObject();
+
+	writer.EndObject(); // end REQ_COMM_DATA
+	writer.EndObject(); // end REQUESTS
+	writer.EndArray(); // end REQUESTS
+
+	writer.EndObject(); // end JSON 
 
 	string strJson = strBuffer.GetString();
 	return strJson;

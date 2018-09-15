@@ -108,7 +108,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <AdditionalIncludeDirectories>C:\Users\M-Kepler\source\repos\parse_log\libcurl\windows\include;C:\Users\M-Kepler\source\repos\parse_log\glog\windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\M-Kepler\source\repos\parse_log;C:\Users\M-Kepler\source\repos\parse_log\libcurl\windows\include;C:\Users\M-Kepler\source\repos\parse_log\glog\windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>CURL_STATICLIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -138,13 +138,17 @@
     <ClCompile Include="log.cpp" />
     <ClCompile Include="multi_thread.cpp" />
     <ClCompile Include="parse_log.cpp" />
-    <ClCompile Include="test.cpp" />
+    <ClCompile Include="soapC.cpp" />
+    <ClCompile Include="soapSoapServiceSoapBindingProxy.cpp" />
+    <ClCompile Include="stdsoap2.cpp" />
+    <ClCompile Include="test.hpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="BugList.md" />
     <None Include="ReadMe.md" />
     <None Include="runlog_config.ini" />
+    <None Include="SoapServiceSoapBinding.nsmap" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="define.h" />
@@ -153,6 +157,10 @@
     <ClInclude Include="inifile.h" />
     <ClInclude Include="log.h" />
     <ClInclude Include="multi_thread.h" />
+    <ClInclude Include="soapH.h" />
+    <ClInclude Include="soapSoapServiceSoapBindingProxy.h" />
+    <ClInclude Include="soapStub.h" />
+    <ClInclude Include="stdsoap2.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
