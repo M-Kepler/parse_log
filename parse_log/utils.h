@@ -39,6 +39,14 @@ enum UtilsError
 };
 
 
+typedef struct CurrentSysTime
+{
+	char pDate[16];		//年月日
+	char pTime[16];		//时分秒
+	char pTimeMs[4];	//毫秒
+}CurrentSysTime, *pCurrSysTime;
+
+
 class CUtils
 {
 public:
@@ -46,14 +54,17 @@ public:
 	~CUtils();
 
 public:
+	CurrentSysTime m_stCurrSysTime;
+
+public:
 
 	/*
-	 * @brief	加载文件
+	 * @brief	根据配置中的RunLogPath加载当天的日志文件
 	 * @param   ifstream		ifstream的引用
-	 * @param   filename		文件名
+	 * @param   filename		要打开的文件名
 	 * @return	enum			错误码
 	 */
-	UtilsError LoadFile(ifstream &file, const char* filename);
+	UtilsError LoadFile(ifstream &file, string filename = "runlog0.log");
 
 
 	/*
@@ -69,10 +80,10 @@ public:
 
 	/*
 	 * @brief	行字符串转毫秒时间 (开始位置往后15位是日期时间,若>15位,则16-19为毫秒)
-	 * @param   str				整个字符串
+	 * @param   strOrig				整个字符串
 								时间格式为:YYYYMMDD-HHMMSS; formate = (char*)"%4d%2d%2d-%2d%2d%2d
-	 * @param   int				字符串中时间开始位置
-	 * @param   int				字符串中秒级时间结束位置
+	 * @param   iStart			字符串中时间开始位置
+	 * @param   iLe				字符串中**秒级*时间结束位置
 	 * @return	time_t			返回毫秒级时间
 	 */
 	// XXX 这里的iStart为测试数据的起始位置, 实际中要改
@@ -113,6 +124,15 @@ public:
 	 */
 	time_t GetCurrentTimeMs();
 
+
+	/*
+	 * @brief       获取当前系统日期时间
+	 * @param[in]		pDataFormat				日期的格式
+	 * @param[in]		pTimeFormat				时间格式
+	 * @return      该函数在初始化类对象时, 即初始化类成员m_stCurrSysTime
+	 */
+	// 初衷是为了能到当天文件夹下去找runlog的
+	void SysNowTime(const char* pDataFormat = "%Y%m%d", const char* pTimeFormat = "%H%M%S");
 
 	/*
 	 * @brief	发Http Post请求
@@ -171,6 +191,8 @@ private:
 	char* m_ConfigPath = (char*)"./runlog_config.ini";
 	int m_iErrorLineNum;
 	string m_strErrorStr;
+
+
 	/* soap */
 	char m_szIsProxy[8 + 1];
 	char m_szProxyType[8 + 1];

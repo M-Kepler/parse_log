@@ -131,6 +131,27 @@ LIBRARY_PATH=/path/to/libcurl/lib
 6. 配置属性 --> C/C++ --> 预处理器 --> 预处理器定义 --> 编辑框中添加: CURL_STATICLIB 
 
 
+## gsoap
+
+* 名字空间重定义
+https://bbs.csdn.net/topics/390023121
+* 例子
+https://blog.csdn.net/vv_demon/article/details/41282285
+
+### 过程
+
+* 下载gsoap
+
+* 把文件复制到工程目录下(有的是生成的,有的是gsoap自带的)
+soapSoapServiceSoapBindingProxy.h
+soapSoapServiceSoapBindingProxy.cpp
+soapH.h
+soapC.cpp
+SoapServiceSoapBinding.nsmap
+soapStub.h
+stdsoap2.h
+stdsoap2.cpp
+
 
 
 ## Q&A

@@ -10,6 +10,7 @@
 
 CUtils::CUtils()
 {
+	SysNowTime();// 初始化时间
 }
 
 
@@ -18,19 +19,31 @@ CUtils::~CUtils()
 }
 
 
-UtilsError CUtils::LoadFile(ifstream &file, const char* filename)
+UtilsError CUtils::LoadFile(ifstream &file, string filename)
 {
-	file.open(filename, ios::binary | ios::in);
+	string strFileName;
+	string strData;
+	string strRunLogPath;
+	UtilsError utilsError;
+
+	if ((utilsError = GetConfigValue(strRunLogPath, "RunLogPath")) != UTILS_RTMSG_OK)
+	{
+		LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
+		// TODO 异常抛出
+		abort();
+	}
+	strFileName = strRunLogPath + "/" + m_stCurrSysTime.pDate + "/" + filename;
+
+	file.open(strFileName.c_str(), ios::binary | ios::in);
 
 	if (!file)
 	{
-		// 打印日志
-		LOG(ERROR) <<  "Error: File \"" << filename << "\" do not exist!" << endl;
+		LOG(ERROR) <<  "打开文件失败, 文件: \"" << strFileName << "\" 不存在!" << endl;
 		return UTILS_FILE_ERROR;
 	}
 	else
 	{
-		return UTILS_OPEN_SUCCESS;
+		return UTILS_RTMSG_OK;
 	}
 }
 
@@ -161,6 +174,20 @@ UtilsError CUtils::GetConfigValue(string & strValue, string strKey, string strSe
 		return UTILS_GET_INI_ERROR;
 	}
 	return UTILS_RTMSG_OK;
+}
+
+
+void CUtils::SysNowTime(const char* pDataFormat, const char* pTimeFormat)
+{
+	time_t timep;
+	time(&timep);
+	struct timeb tb;
+
+	strftime(m_stCurrSysTime.pDate, sizeof(m_stCurrSysTime.pDate), pDataFormat, localtime(&timep));
+	strftime(m_stCurrSysTime.pTime, sizeof(m_stCurrSysTime.pTime), pTimeFormat, localtime(&timep));
+
+	ftime(&tb);
+	sprintf(m_stCurrSysTime.pTimeMs, "%03d", tb.millitm);
 }
 
 

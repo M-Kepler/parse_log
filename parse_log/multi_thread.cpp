@@ -54,7 +54,7 @@ int multi_thread()
 	// 实际上文件时每天一个的
 	// const char* filename = "runlog0-3.1.log";
 	// const char* filename = "test.log";
-	const char* filename = "test2.log";
+	// const char* filename = "test2.log";
 	ios::sync_with_stdio(false);
 	// bak
 	pLogMaps = new LogMap[iThreadCount];
@@ -69,8 +69,8 @@ int multi_thread()
 
 	// 读取文件
 	ifstream file;
-	utilsError = clUtils.LoadFile(file, filename);
-	if (UTILS_OPEN_SUCCESS != utilsError)
+	utilsError = clUtils.LoadFile(file);
+	if (UTILS_RTMSG_OK != utilsError)
 	{
 		return utilsError;
 	}

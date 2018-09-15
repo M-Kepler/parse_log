@@ -1,5 +1,6 @@
 #include <iostream>
 #include <thread>
+#include <sys/timeb.h>
 #include <mutex>
 #include "inifile.h"
 #include "multi_thread.h"
@@ -55,6 +56,43 @@ std::wstring String2WString(const std::string& s)
 	return wstrResult;
 }
 
+/*
+typedef struct CurrentSysTime
+{
+	char pDate[16]; //年月日
+	char pTime[16]; //时分秒
+	char pTimeMs[4];  //毫秒
+}CurrentSysTime, *pCurrSysTime;
+
+CurrentSysTime getSysTime()
+{
+	time_t timep;
+	time(&timep);
+	CurrentSysTime date;
+
+	strftime(date.pDate, sizeof(date.pDate), "%Y-%m-%d", localtime(&timep));
+	strftime(date.pTime, sizeof(date.pTime), "%H:%M:%S", localtime(&timep));
+
+	struct timeb tb;
+	ftime(&tb);
+	sprintf(date.pTimeMs, "%d", tb.millitm);
+	return date;
+}
+*/
+
+
+const std::string getCurrentSystemTime()
+{
+	auto tt = std::chrono::system_clock::to_time_t
+	(std::chrono::system_clock::now());
+	struct tm* ptm = localtime(&tt);
+	char date[60] = { 0 };
+	sprintf(date, "%d-%02d-%02d      %02d:%02d:%02d",
+		(int)ptm->tm_year + 1900, (int)ptm->tm_mon + 1, (int)ptm->tm_mday,
+		(int)ptm->tm_hour, (int)ptm->tm_min, (int)ptm->tm_sec);
+	return std::string(date);
+}
+
 
 int main(int argv, char* argc[])
 {
@@ -74,16 +112,34 @@ int main(int argv, char* argc[])
 
 	// 读取文件
 	CUtils clUtils;
-
 	ifstream file;
+
 	streamoff start = 0;
 	streamsize size;
 	int iLen;
+
+	// 打开文件
+	/*
 	file.open(filename, ios::binary | ios::in);
 	if (!file)
 	{
 		cout << "open file fail" << endl;
 	}
+	*/
+
+	// 打开文件 clutils.LoadFile
+	if (UTILS_RTMSG_OK == clUtils.LoadFile(file))
+	{
+		cout << "文件打开成功" << endl;
+	}
+
+	string nowdate = clUtils.m_stCurrSysTime.pDate;
+	string nowtime = clUtils.m_stCurrSysTime.pTime;
+	string nowms = clUtils.m_stCurrSysTime.pTimeMs;
+	string now = nowdate + "-" + nowtime + "-" + nowms;
+	cout << now << endl;
+	cout << clUtils.StringToMs(now, 0, 15) << endl;
+	cout << clUtils.GetCurrentTimeMs() << endl;
 
 
 	// gsoap
