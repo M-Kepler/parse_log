@@ -29,6 +29,7 @@ int multi_thread()
 	string strThreadCount;
 	string strAnsNum;
 	string strScanTime;
+	string strIncreRead;
 	streamsize llLoadSize;
 	streamsize llMaxSize;
 
@@ -38,6 +39,7 @@ int multi_thread()
 		|| (utilsError = clUtils.GetConfigValue(strLineBuffer, "LineBuffer")) != UTILS_RTMSG_OK
 		|| (utilsError = clUtils.GetConfigValue(strAnsNum, "AnsNum")) != UTILS_RTMSG_OK
 		|| (utilsError = clUtils.GetConfigValue(strScanTime, "ScanTime")) != UTILS_RTMSG_OK
+		|| (utilsError = clUtils.GetConfigValue(strIncreRead, "IncreRead")) != UTILS_RTMSG_OK
 		)
 	{
 		LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
@@ -51,12 +53,7 @@ int multi_thread()
 	iScanTime = stoi(strScanTime);
 
 	// TODO
-	// 实际上文件时每天一个的
-	// const char* filename = "runlog0-3.1.log";
-	// const char* filename = "test.log";
-	// const char* filename = "test2.log";
 	ios::sync_with_stdio(false);
-	// bak
 	pLogMaps = new LogMap[iThreadCount];
 
 	// 双缓冲
@@ -64,7 +61,6 @@ int multi_thread()
 
 	loadedFile[0] = new char[llMaxSize];
 	loadedFile[1] = new char[llMaxSize];
-
 
 
 	// 读取文件
@@ -92,7 +88,6 @@ int multi_thread()
 		bool bNeedWait = false;
 		thread *threads = new thread[iThreadCount];
 
-		// TODO 分离
 		// 获取大小
 		/* 兼容带 bom 的 utf8 编码格式 */
 		if (llFileLen > 3)
@@ -115,33 +110,36 @@ int multi_thread()
 			llFileSize = llFileLen;
 		}
 
-		cout << "==============-------------------------==============-------------------------==============" << endl;
-		cout <<  "总文件大小: " << llFileSize << endl; // debug
+		LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
+		LOG(INFO) << "总文件大小: " << llFileSize << endl;
 
 		// 原有的日志不需要分析
-		char* strReq = (char*)"Req:";
+		if (strIncreRead == "Yes")
+		{
+			char* strReq = (char*)"Req:";
 
-		vector<string> vecTailLine;
-		utilsError = clUtils.TailLine(file, 1, vecTailLine);
-		if (utilsError != UTILS_RTMSG_OK)
-		{
-			abort();
-		}
-		strLastLine = vecTailLine[0];
-		iLineLen = strLastLine.length();
-		if (strstr(strLastLine.c_str(), strReq) != NULL)
-		{
-			file.clear();
-			// file.seekg(-(iLineLen + 1), ios::end); // XXX 这里+1是为了跳过换行符\n,但是当只有一行时, 行首是没有\n的
-			file.seekg(-(iLineLen), ios::end);
-			llLastLinePos = file.tellg();
-		}
-		else
-		{
-			file.clear();
-			file.seekg(0, ios::end);
-			llLastLinePos = file.tellg();
-			Sleep(iScanTime); // XXX WIN
+			vector<string> vecTailLine;
+			utilsError = clUtils.TailLine(file, 1, vecTailLine);
+			if (utilsError != UTILS_RTMSG_OK)
+			{
+				abort();
+			}
+			strLastLine = vecTailLine[0];
+			iLineLen = strLastLine.length();
+			if (strstr(strLastLine.c_str(), strReq) != NULL)
+			{
+				file.clear();
+				// file.seekg(-(iLineLen + 1), ios::end); // XXX 这里+1是为了跳过换行符\n,但是当只有一行时, 行首是没有\n的
+				file.seekg(-(iLineLen), ios::end);
+				llLastLinePos = file.tellg();
+			}
+			else
+			{
+				file.clear();
+				file.seekg(0, ios::end);
+				llLastLinePos = file.tellg();
+				Sleep(iScanTime); // XXX WIN
+			}
 		}
 
 		file.clear();
@@ -150,12 +148,12 @@ int multi_thread()
 		llFileSize = llEndFilePos - llLastLinePos;
 		llStart = llLastLinePos; // 开始读入位置回退到最末尾一行的行首
 
-		cout << "==============-------------------------==============-------------------------==============" << endl;
-		cout << "最后一行为: " << strLastLine << endl;
-		cout << "==============-------------------------==============-------------------------==============" << endl;
+		LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
+		LOG(INFO) << "最后一行为: " << strLastLine << endl;
+		LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
 
-		cout << "==============-------------------------==============-------------------------==============" << endl;
-		cout << "需分析文件大小: " << llFileSize << "\t分析开始位置: " << llStart << "\t分析结束位置: " << llEndFilePos << endl; // debug
+		LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
+		LOG(INFO) << "需分析文件大小: " << llFileSize << "\t分析开始位置: " << llStart << "\t分析结束位置: " << llEndFilePos << endl;
 
 		ParseLog(file, llFileSize, pCurrPos, strLoadSize, llMaxSize, llStart, iThreadCount, iAnsNum, iScanTime);
 
@@ -295,11 +293,24 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 {
 	int iLbmTimeOut;
 	string strLbmTimeOut;
+	string strModule;
 	string strPostData;
+	string strRetCode;
 	auto begin = mymap.begin();
 	auto end = mymap.end();
-	cout << "\n==============-------------------------==============-------------------------==============" << endl;
-	cout << "allLogMap.size(): " << allLogMap.size() << endl;
+
+	// 抽离
+	// 获取配置
+	if ((utilsError = clUtils.GetConfigValue(strModule, "LbmTimeOut")) != UTILS_RTMSG_OK)
+	{
+		LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
+		// TODO 异常抛出
+		abort();
+	}
+
+	LOG(INFO) << endl;
+	LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
+	LOG(INFO) << "allLogMap.size(): " << allLogMap.size() << endl;
 	for (; begin != end; )
 	{
 		if (mymap.count(begin->first) < iAnsNum)
@@ -316,40 +327,21 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 			}
 			iLbmTimeOut = stoi(strLbmTimeOut);
 
-			if ((CurrTimeMs - MsgTimeMs) > iLbmTimeOut)
+			if (((CurrTimeMs - MsgTimeMs) > iLbmTimeOut) && (strstr((begin->second).c_str(), "Req") != NULL))
 			{
-				// ans串可能在下一个内存块,所以超时才删
-				cout << "超时+发送+删除\t" << CurrTimeMs << "\t" << MsgTimeMs << "\t" << CurrTimeMs - MsgTimeMs << "\t" << begin->second << endl;
+				// ans 串可能在下一个内存块,所以超时就删
+				// 既然已经超时,而ans串在下一个内存块, 不应该发送, 应该直接删除
+				cout << "超时+发送+删除\t" << CurrTimeMs << "\t" << MsgTimeMs << "\t" << CurrTimeMs - MsgTimeMs << endl;// debug
 
 				strPostData = clUtils.AssembleJson(begin->second);
-				cout << "\n==============-------------------------==============-------------------------==============" << endl;
-				cout << "\n==============-------------------------==============" << "发送的数据为:   " << "==============-------------------------==============" << endl;
-				cout << strPostData << endl;
-
-				// 发送并删除
-				/*
-				char* pMsgData = (char*)strPostData.c_str();
-				// utilsError = clUtils.DoPost(pMsgData, strResponse);
-				utilsError = clUtils.DoPost(pMsgData, strResponse);
-				LOG(INFO) << "\n==============-------------------------==============" << "发送的数据为:   " << "==============-------------------------==============" << endl;
-				LOG(INFO) << pMsgData << endl;
-
-				if (UTILS_RTMSG_OK != utilsError)
-				{
-					LOG(ERROR) << "\n==============-------------------------==============" << "发POST请求失败! " << "==============-------------------------==============" << endl;
-					LOG(ERROR) << "错误码: " << utilsError << endl;
-				}
-				else
-				{
-					LOG(ERROR) << "\n==============-------------------------==============" << "缺失的请求串为: " << "==============-------------------------==============" << endl;
-					LOG(INFO) <<  clUtils.GetMsgValue(begin->second, "MsgId") << endl; // debug
-					LOG(INFO) << "\n==============-------------------------==============" << "发POST请求成功! " << "==============-------------------------==============" << endl;
-					LOG(INFO) << "\n==============-------------------------==============" << "收到的回复为:   " << "==============-------------------------==============" << endl;
-					LOG(INFO) << strResponse << endl;
-				}
-				*/
 
 				// begin++;
+				begin = mymap.erase(begin);
+				begin = mymap.begin();
+			}
+			else if (((CurrTimeMs - MsgTimeMs) > iLbmTimeOut) && (strstr((begin->second).c_str(), "Ans") != NULL))
+			{
+				// ans 串对应的req串已因超时被删除了, ans串再下一个内存块,也删掉
 				begin = mymap.erase(begin);
 				begin = mymap.begin();
 			}
@@ -362,15 +354,57 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 		}
 		else
 		{
+			if ((strstr((begin->second).c_str(), "Ans") != NULL))
+			{
+				strRetCode = clUtils.GetMsgValue(begin->second, "&_1");
+				LogMapKeySet iterReqData = mymap.find(begin->first);
+				// XXX cts的错误码是0吗
+				if (((strModule == "KBSS") && (strRetCode != "0"))
+					|| ((strModule == "CTS") && (strRetCode != "0"))
+					)
+				{
+					// 报错的lbm的ans串
+					strPostData = clUtils.AssembleJson(iterReqData->second, begin->second);
+				}
+			}
+
 			// 删除同时存在req、ans的
 			string key = begin->first;
 			mymap.erase(begin->first);
 			begin = mymap.begin();
 			// end = mymap.end();
 		}
+		if (!strPostData.empty())
+		{
+			// 发送并删除
+			// char* pMsgData = (char*)strPostData.c_str();
+			// utilsError = clUtils.DoPost(pMsgData, strResponse);
+
+			// utilsError = clUtils.WebServiceAgent(strPostData, strResponse);
+			/* test */
+			utilsError = UTILS_RTMSG_OK;
+			strResponse = "OK";
+
+			LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
+			LOG(INFO) << "==============-------------------------==============" << "发送的数据为:   " << "==============-------------------------==============" << endl;
+			LOG(INFO) << strPostData << endl;
+
+			if (UTILS_RTMSG_OK != utilsError)
+			{
+				LOG(ERROR) << "==============-------------------------==============" << "发POST请求失败! " << "==============-------------------------==============" << endl;
+				LOG(ERROR) << "错误码: " << utilsError << endl;
+			}
+			else
+			{
+				strPostData = "";
+				LOG(INFO) << "==============-------------------------==============" << "发POST请求成功! " << "==============-------------------------==============" << endl;
+				LOG(INFO) << "==============-------------------------==============" << "收到的回复为:   "  << strResponse << "==============-------------------------==============" << endl;
+			}
+			// TODO 对收到的回复做处理
+		}
 
 	}
-	cout << "删除后allLogMap.size():   " << allLogMap.size() << endl;
+	cout << "删除后allLogMap.size():   " << allLogMap.size() << endl;// debug
 }
 
 
@@ -406,13 +440,18 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 		// llThreadIndex = llFileSize - iLineLen - 1; // 减去最后一行与上一行之间的\n字符
 		llThreadPart = llRealSize / iThreadCount;
 
-		cout << "\n\n==============-------------------------==============-------------------------==============" << endl;
-		cout << "读入数据到 loadedFile[bBufferIndex]: " << bBufferIndex << endl; // debug
-		cout << "\n计划一次读入大小 llLoadSize: " << stoll(strLoadSize) << "\t实际一次读入大小 llRealSize: " << llRealSize << endl; // debug
-		// cout << "\n读入开始位置 llStart: " << llStart << "\t总文件剩余读取大小 llFileSize: " << llFileSize << endl;
-		cout << "\n读入开始位置 llStart: " << llStart << "\t总文件剩余读取大小 llFileSize: " << llFileSize << endl;
-		cout << "\n计划每个线程读入大小 llThreadPart: " << llThreadPart ; // debug
-		cout << "\n==============-------------------------==============-------------------------==============" << endl << endl;
+		LOG(INFO) << endl;
+		LOG(INFO) << endl;
+		LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
+		LOG(INFO) << "读入数据到 loadedFile[bBufferIndex]: " << bBufferIndex << endl;
+		LOG(INFO) << endl;
+		LOG(INFO) << "计划一次读入大小 llLoadSize: " << stoll(strLoadSize) << "\t实际一次读入大小 llRealSize: " << llRealSize << endl;
+		LOG(INFO) << endl;
+		LOG(INFO) << "读入开始位置 llStart: " << llStart << "\t总文件剩余读取大小 llFileSize: " << llFileSize << endl;
+		LOG(INFO) << endl;
+		LOG(INFO) << "计划每个线程读入大小 llThreadPart: " << llThreadPart;
+		LOG(INFO) << endl;
+		LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl << endl;
 
 
 		// 读入 llRealSize 大小的文件数据到缓存 loadedFile[bBufferIndex] 中
@@ -457,7 +496,8 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 
 
 
-		cout << "\n==============-------------------------==============-------------------------==============" << endl;
+		LOG(INFO) << endl;
+		LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
 		for (int i = 1; i < iThreadCount; ++i)
 		{
 			// test begin
@@ -479,9 +519,9 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 			// 若剩余行数少于线程数,还需要判断一下线程已处理的字符和该块数据的大小
 			if (llFileLen + llThreadIndex < llRealSize)
 			{
-				cout << "线程 " << i << " 开始读入位置llThreadIndex: " << llThreadIndex << "\t实际线程 " << i << " 读入大小llFileLen:" << llFileLen << endl; // debug
+				LOG(INFO) << "线程 " << i << " 开始读入位置llThreadIndex: " << llThreadIndex << "\t实际线程 " << i << " 读入大小llFileLen:" << llFileLen << endl; // debug
 				vecThreadLines = ReadLineToVec(bBufferIndex, llThreadIndex, llFileLen);
-				cout << "线程 " << i << " 共读入: " << vecThreadLines.size() << "行" << endl << endl << endl; // debug
+				LOG(INFO) << "线程 " << i << " 共读入: " << vecThreadLines.size() << "行" << endl << endl << endl; // debug
 				threads[i] = thread(ParseMsgLine, vecThreadLines, i, "MsgId");
 				llThreadIndex += llFileLen;
 			}
@@ -495,19 +535,20 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 		// llThreadIndex += 1; // 下一个线程读取的开始位置, 跳过\n字符
 		// test end
 
-		cout << "线程 4 开始读入位置 llThreadIndex: " << llThreadIndex << "\t实际线程 4 读入大小 llRealSize-llThreadIndex: " << llRealSize - llThreadIndex << endl; // debug
+		LOG(INFO) << "线程 4 开始读入位置 llThreadIndex: " << llThreadIndex << "\t实际线程 4 读入大小 llRealSize-llThreadIndex: " << llRealSize - llThreadIndex << endl; // debug
 		// XXX
 		// 一行请求不可能少于70个字符吧
 		if ((llRealSize - llThreadIndex) > 70)
 		{
 			vecEndThreadLines = ReadLineToVec(bBufferIndex, llThreadIndex, llRealSize - llThreadIndex);
 			threads[0] = thread(ParseMsgLine, vecEndThreadLines, 0, "MsgId");
-			cout << "线程 4 " << "共读入: " << vecEndThreadLines.size() << "行" << endl; // debug
+			LOG(INFO) << "线程 4 " << "共读入: " << vecEndThreadLines.size() << "行" << endl; // debug
 		}
 
 		bBufferIndex = !bBufferIndex; // 切换 Buffer 装数据
-		cout << "\n==============-------------------------==============-------------------------==============" << endl;
-		cout << "文件剩余大小: llFileSize: " << llFileSize << endl << endl << endl << endl; // debug
+		LOG(INFO) << endl;
+		LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
+		LOG(INFO) << "文件剩余大小: llFileSize: " << llFileSize << endl << endl << endl << endl;
 
 		// 文件滚动增长
 		if (llFileSize != 0)
@@ -516,9 +557,12 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 		}
 		else
 		{
-			cout << "\n============== ----------------------- ============== ----------------------- ==============";
-			cout << "\n============== ----------------------- 读入下一数据块 ----------------------- ==============";
-			cout << "\n============== ----------------------- ============== ----------------------- ==============" << endl;
+			LOG(INFO) << endl;
+			LOG(INFO) << "============== ----------------------- ============== ----------------------- ==============";
+			LOG(INFO) << endl;
+			LOG(INFO) << "============== ----------------------- 读入下一数据块 ----------------------- ==============";
+			LOG(INFO) << endl;
+			LOG(INFO) << "============== ----------------------- ============== ----------------------- ==============" << endl;
 			for (int i = 0; i < iThreadCount; ++i)
 			{
 				if (threads[i].joinable())
@@ -556,8 +600,9 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 
 			llFileSize = pNewPos - pCurrPos;
 
-			cout << "\n==============-------------------------==============-------------------------==============" << endl;
-			cout << "当前指针位置: " << pNewPos << "\t上次指针位置: " << pCurrPos << "\t增长文件大小: " << llFileSize << endl; // debug
+			LOG(INFO) << endl;
+			LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
+			LOG(INFO) << "当前指针位置: " << pNewPos << "\t上次指针位置: " << pCurrPos << "\t增长文件大小: " << llFileSize << endl; // debug
 
 			if (llFileSize < 0)
 			{

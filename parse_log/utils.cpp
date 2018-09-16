@@ -43,6 +43,7 @@ UtilsError CUtils::LoadFile(ifstream &file, string filename)
 	}
 	else
 	{
+		LOG(INFO) <<  "打开文件: \"" << strFileName << "\" 成功!" << endl;
 		return UTILS_RTMSG_OK;
 	}
 }
@@ -208,7 +209,6 @@ UtilsError CUtils::TailLine(ifstream &file, int iLineNum, vector<string>& vecRet
 	if (!file)
 	{
 		LOG(ERROR) << "获取文件最后" << iLineNum << "行失败" << endl;
-		LOG(ERROR) << "文件未打开" << endl;
 		return UTILS_FILE_ERROR;
 	}
 
@@ -420,6 +420,7 @@ void CUtils::SoapProxyInit(struct soap *soap)
 
 string CUtils::AssembleJson(string strReqData, string strAnsData, int iStart, int iLen)
 {
+	int iVecSize;
 	bool isEmpty;
 	string strReqBuf;
 	string strServiceName; // 服务名
@@ -467,11 +468,21 @@ string CUtils::AssembleJson(string strReqData, string strAnsData, int iStart, in
 	// 切割Buf
 	strReqBuf = GetMsgValue(strReqData, "Buf");
 	vecStrBuf = SplitString(strReqBuf, "&");
+
 	for (size_t i = 0; i < vecStrBuf.size(); i++)
 	{
 		vecStrSubBuf = SplitString(vecStrBuf[i], "=");
+		iVecSize = vecStrSubBuf.size();
 		writer.String(vecStrSubBuf[0].c_str());
-		writer.String(vecStrSubBuf[1].c_str());
+		// 有的参数=号后面没有值
+		if (iVecSize < 2)
+		{
+			writer.String("");
+		}
+		else
+		{
+			writer.String(vecStrSubBuf[1].c_str());
+		}
 	}
 
 

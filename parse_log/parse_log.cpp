@@ -96,7 +96,8 @@ const std::string getCurrentSystemTime()
 
 int main(int argv, char* argc[])
 {
-	// multi_thread();
+	CGlog *p_glog = CGlog::GetInstance();
+	multi_thread();
 
 	bool step = 0;
 	streamsize loadsize = 250000;
@@ -104,7 +105,6 @@ int main(int argv, char* argc[])
 	loadedFile2[1] = new char[loadsize];
 	UtilsError utileError;
 
-	CGlog *p_glog = CGlog::GetInstance();
 
 	string str_buf = "_ENDIAN=0&F_OP_USER=9999&F_OP_ROLE=2&F_SESSION=0123456789&F_OP_SITE=0050569e247d&F_OP_BRANCH=999&F_CHANNEL=0&USE_NODE_FUNC=522210&CUSTOMER=180022892&MARKET=0&BOARD=0&SECU_ACC=0139680203&NO_CHECK_STATUS=1";
 	string str_req = "20180430-211359-522345-18225    99 Req: LBM=L0301002, MsgId=0000000100F462171E4D4B25, Len=299, Buf=_ENDIAN=0&F_OP_USER=9999&F_OP_ROLE=2&F_SESSION=0123456789&F_OP_SITE=0050569e247d&F_OP_BRANCH=999&F_CHANNEL=0&USE_NODE_FUNC=106127&CUSTOMER=150165853&MARKET=1&BOARD=0";
@@ -167,7 +167,7 @@ int main(int argv, char* argc[])
 	string strJson = clUtils.AssembleJson(str_req, str_ans, 0, 19);
 	cout << clUtils.AssembleJson(str_req, str_ans, 0, 19) << endl;
 	string strResp;
-	clUtils.WebAgent(strJson, strResp);
+	clUtils.WebServiceAgent(strJson, strResp);
 	cout << strResp;
 	*/
 

@@ -87,7 +87,9 @@ public:
 	 * @return	time_t			返回毫秒级时间
 	 */
 	// XXX 这里的iStart为测试数据的起始位置, 实际中要改
-	time_t StringToMs(string strOrig, int iStart = 39, int iLen = 53);
+	// runlog0.log 为iStart = 0, iLen = 15
+	// time_t StringToMs(string strOrig, int iStart = 39, int iLen = 53);
+	time_t StringToMs(string strOrig, int iStart = 0, int iLen = 15);
 
 
 	/*
@@ -171,7 +173,8 @@ public:
 	 * @return      string			组装后的json
 	 */
 	// XXX 这里的iStart为测试数据的起始位置, 实际中要改
-	string AssembleJson(string strReqData, string strAnsData = "", int iStart = 39, int iLen = 19);
+	// string AssembleJson(string strReqData, string strAnsData = "", int iStart = 39, int iLen = 19);
+	string AssembleJson(string strReqData, string strAnsData = "", int iStart = 0, int iLen = 19);
 
 
 	/*
