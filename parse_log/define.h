@@ -38,14 +38,19 @@
 
 #ifdef OS_IS_LINUX
 #define strtok_s strtok_r
-
+#define PATHSPLIT '/'
 #define LPCSTR const char*
 #define LONG long
 #define LONGLONG long long
 #define HANDLE void*
 #define INVALID_HANDLE_VALUE -1
 #define DWORD unsigned long
-
+#define Sleep usleep
+// 为了兼容windows下的Sleep函数, 这里对Unix下的usleep做放大
+#define SLEEP_MULTIPLE 1000
+#else
+#define PATHSPLIT '\\'
+#define SLEEP_MULTIPLE 1
 # endif
 
 #endif

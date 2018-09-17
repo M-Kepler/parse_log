@@ -10,6 +10,7 @@
 #include <time.h>
 #include <thread>
 #include "utils.h"
+#include "define.h"
 
 using namespace std;
 

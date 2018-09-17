@@ -39,9 +39,8 @@ int CGlog::InitGlog()
 
 	if (!DirExist())
 	{
-		// XXX
 		// WARNING 报Log文件夹不存在的警告
-		cout << "log目录不存在" << endl;
+		LOG(WARNING) << "log目录不存在" << endl;
 	}
 
 	google::SetLogFilenameExtension(".log");
@@ -50,10 +49,10 @@ int CGlog::InitGlog()
 	google::InitGoogleLogging("parse_runlog");
 
 	// 设置INFO/WARNING/ERROR级别以上的信息log文件的路径和前缀名
-	google::SetLogDestination(google::GLOG_INFO, (Value_Log_Path + "\\INFO").c_str());
-	google::SetLogDestination(google::GLOG_WARNING, (Value_Log_Path + "\\WARNING").c_str());
-	google::SetLogDestination(google::GLOG_ERROR, (Value_Log_Path + "\\ERROR").c_str());
-	google::SetLogDestination(google::GLOG_FATAL, (Value_Log_Path + "\\FATAL").c_str());
+	google::SetLogDestination(google::GLOG_INFO, (Value_Log_Path + PATHSPLIT + "INFO").c_str());
+	google::SetLogDestination(google::GLOG_WARNING, (Value_Log_Path + PATHSPLIT + "WARNING").c_str());
+	google::SetLogDestination(google::GLOG_ERROR, (Value_Log_Path + PATHSPLIT + "ERROR").c_str());
+	google::SetLogDestination(google::GLOG_FATAL, (Value_Log_Path + PATHSPLIT + "FATAL").c_str());
 
 
 	// 设置glog的输出级别，这里的含义是输出INFO级别以上的信息

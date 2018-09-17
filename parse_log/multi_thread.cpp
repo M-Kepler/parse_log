@@ -138,7 +138,7 @@ int multi_thread()
 				file.clear();
 				file.seekg(0, ios::end);
 				llLastLinePos = file.tellg();
-				Sleep(iScanTime); // XXX WIN
+				Sleep(iScanTime * SLEEP_MULTIPLE);
 			}
 		}
 
@@ -292,6 +292,7 @@ void ParseMsgLine(vector<string> vecStr, int id, string strKey)
 void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 {
 	int iLbmTimeOut;
+	int iSoapRetCode;
 	string strLbmTimeOut;
 	string strModule;
 	string strPostData;
@@ -301,7 +302,7 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 
 	// 抽离
 	// 获取配置
-	if ((utilsError = clUtils.GetConfigValue(strModule, "LbmTimeOut")) != UTILS_RTMSG_OK)
+	if ((utilsError = clUtils.GetConfigValue(strModule, "Module")) != UTILS_RTMSG_OK)
 	{
 		LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
 		// TODO 异常抛出
@@ -325,13 +326,13 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 				// TODO 异常抛出
 				abort();
 			}
-			iLbmTimeOut = stoi(strLbmTimeOut);
+			iLbmTimeOut = stoll(strLbmTimeOut);
 
 			if (((CurrTimeMs - MsgTimeMs) > iLbmTimeOut) && (strstr((begin->second).c_str(), "Req") != NULL))
 			{
 				// ans 串可能在下一个内存块,所以超时就删
-				// 既然已经超时,而ans串在下一个内存块, 不应该发送, 应该直接删除
-				cout << "超时+发送+删除\t" << CurrTimeMs << "\t" << MsgTimeMs << "\t" << CurrTimeMs - MsgTimeMs << endl;// debug
+				LOG(INFO) <<  "扫描时间(ms): " << CurrTimeMs << "\tReq串时间(ms): " << MsgTimeMs << "\t时间差: " << CurrTimeMs - MsgTimeMs;
+				LOG(INFO) << endl;
 
 				strPostData = clUtils.AssembleJson(begin->second);
 
@@ -341,7 +342,7 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 			}
 			else if (((CurrTimeMs - MsgTimeMs) > iLbmTimeOut) && (strstr((begin->second).c_str(), "Ans") != NULL))
 			{
-				// ans 串对应的req串已因超时被删除了, ans串再下一个内存块,也删掉
+				// ans 串对应的req串已因超时被删除了, ans串在下一个内存块,也删掉
 				begin = mymap.erase(begin);
 				begin = mymap.begin();
 			}
@@ -349,7 +350,6 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 			{
 				begin++;
 			}
-			// TODO 上面找到了超时的串，还要找到有报错的串呀
 
 		}
 		else
@@ -357,12 +357,20 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 			if ((strstr((begin->second).c_str(), "Ans") != NULL))
 			{
 				strRetCode = clUtils.GetMsgValue(begin->second, "&_1");
-				LogMapKeySet iterReqData = mymap.find(begin->first);
-				// XXX cts的错误码是0吗
+				
 				if (((strModule == "KBSS") && (strRetCode != "0"))
 					|| ((strModule == "CTS") && (strRetCode != "0"))
 					)
 				{
+					// 找到该ans对应的req串
+					LogMapKeySet iterReqData = mymap.find(begin->first);
+					for (size_t i = 0; i < mymap.count(begin->first); i++, iterReqData++)
+					{
+						if (strstr(iterReqData->second.c_str(), "Req") != NULL)
+						{
+							break;
+						}
+					}
 					// 报错的lbm的ans串
 					strPostData = clUtils.AssembleJson(iterReqData->second, begin->second);
 				}
@@ -380,38 +388,39 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 			// char* pMsgData = (char*)strPostData.c_str();
 			// utilsError = clUtils.DoPost(pMsgData, strResponse);
 
-			// utilsError = clUtils.WebServiceAgent(strPostData, strResponse);
-			/* test */
-			utilsError = UTILS_RTMSG_OK;
+			// iSoapRetCode = clUtils.WebServiceAgent(strPostData, strResponse);
+			// test
+
+			iSoapRetCode  = 0;
 			strResponse = "OK";
 
 			LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
 			LOG(INFO) << "==============-------------------------==============" << "发送的数据为:   " << "==============-------------------------==============" << endl;
 			LOG(INFO) << strPostData << endl;
+			LOG(INFO) << "==============-------------------------==============" << "收到的回复为:   " << "==============-------------------------==============" << endl;
+			LOG(INFO) << strResponse << endl;
 
-			if (UTILS_RTMSG_OK != utilsError)
+			if (0 != iSoapRetCode)
 			{
-				LOG(ERROR) << "==============-------------------------==============" << "发POST请求失败! " << "==============-------------------------==============" << endl;
-				LOG(ERROR) << "错误码: " << utilsError << endl;
+				LOG(ERROR) << "==============-------------------------==============" << "发请求失败! " << "==============-------------------------==============" << endl;
+				LOG(ERROR) << "SOAP 错误码: " << iSoapRetCode << endl;
 			}
 			else
 			{
 				strPostData = "";
-				LOG(INFO) << "==============-------------------------==============" << "发POST请求成功! " << "==============-------------------------==============" << endl;
-				LOG(INFO) << "==============-------------------------==============" << "收到的回复为:   "  << strResponse << "==============-------------------------==============" << endl;
+				LOG(INFO) << "==============-------------------------==============" << "发请求成功! " << "==============-------------------------==============" << endl;
 			}
-			// TODO 对收到的回复做处理
 		}
 
 	}
-	cout << "删除后allLogMap.size():   " << allLogMap.size() << endl;// debug
+	// cout << "删除后allLogMap.size():   " << allLogMap.size() << endl;// debug
 }
 
 
 void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string strLoadSize, streamsize llMaxSize, streamoff llStart, int iThreadCount, int iAnsNum, int iScanTime)
 {
 
-	clock_t t_start, t_end;
+	clock_t t_start, t_end; // debug
 
 	// test begin
 	pCurrPos = llStart + llFileSize;
@@ -426,7 +435,7 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 
 	while (llFileSize)
 	{
-		t_start = clock();
+		t_start = clock(); // debug
 
 		// test begin
 		// bak
@@ -451,7 +460,7 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 		LOG(INFO) << endl;
 		LOG(INFO) << "计划每个线程读入大小 llThreadPart: " << llThreadPart;
 		LOG(INFO) << endl;
-		LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl << endl;
+		LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
 
 
 		// 读入 llRealSize 大小的文件数据到缓存 loadedFile[bBufferIndex] 中
@@ -491,8 +500,8 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 			bNeedWait = true;
 		}
 
-		t_end = clock();
-		cout << "Scan Complete in : " << t_end - t_start << "ms." << endl; // debug
+		t_end = clock(); // debug
+		cout << "\nScan Complete in : " << t_end - t_start << "ms." << endl << endl; // debug
 
 
 
@@ -519,9 +528,9 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 			// 若剩余行数少于线程数,还需要判断一下线程已处理的字符和该块数据的大小
 			if (llFileLen + llThreadIndex < llRealSize)
 			{
-				LOG(INFO) << "线程 " << i << " 开始读入位置llThreadIndex: " << llThreadIndex << "\t实际线程 " << i << " 读入大小llFileLen:" << llFileLen << endl; // debug
+				LOG(INFO) << "线程 " << i << " 开始读入位置llThreadIndex: " << llThreadIndex << "\t实际线程 " << i << " 读入大小llFileLen:" << llFileLen << endl;
 				vecThreadLines = ReadLineToVec(bBufferIndex, llThreadIndex, llFileLen);
-				LOG(INFO) << "线程 " << i << " 共读入: " << vecThreadLines.size() << "行" << endl << endl << endl; // debug
+				LOG(INFO) << "线程 " << i << " 共读入: " << vecThreadLines.size() << "行" << endl;
 				threads[i] = thread(ParseMsgLine, vecThreadLines, i, "MsgId");
 				llThreadIndex += llFileLen;
 			}
@@ -535,20 +544,19 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 		// llThreadIndex += 1; // 下一个线程读取的开始位置, 跳过\n字符
 		// test end
 
-		LOG(INFO) << "线程 4 开始读入位置 llThreadIndex: " << llThreadIndex << "\t实际线程 4 读入大小 llRealSize-llThreadIndex: " << llRealSize - llThreadIndex << endl; // debug
+		LOG(INFO) << "线程 4 开始读入位置 llThreadIndex: " << llThreadIndex << "\t实际线程 4 读入大小 llRealSize-llThreadIndex: " << llRealSize - llThreadIndex << endl;
 		// XXX
 		// 一行请求不可能少于70个字符吧
 		if ((llRealSize - llThreadIndex) > 70)
 		{
 			vecEndThreadLines = ReadLineToVec(bBufferIndex, llThreadIndex, llRealSize - llThreadIndex);
 			threads[0] = thread(ParseMsgLine, vecEndThreadLines, 0, "MsgId");
-			LOG(INFO) << "线程 4 " << "共读入: " << vecEndThreadLines.size() << "行" << endl; // debug
+			LOG(INFO) << "线程 4 " << "共读入: " << vecEndThreadLines.size() << "行" << endl;
 		}
 
 		bBufferIndex = !bBufferIndex; // 切换 Buffer 装数据
-		LOG(INFO) << endl;
 		LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
-		LOG(INFO) << "文件剩余大小: llFileSize: " << llFileSize << endl << endl << endl << endl;
+		LOG(INFO) << "文件剩余大小: llFileSize: " << llFileSize << endl;
 
 		// 文件滚动增长
 		if (llFileSize != 0)
@@ -559,10 +567,9 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 		{
 			LOG(INFO) << endl;
 			LOG(INFO) << "============== ----------------------- ============== ----------------------- ==============";
-			LOG(INFO) << endl;
 			LOG(INFO) << "============== ----------------------- 读入下一数据块 ----------------------- ==============";
+			LOG(INFO) << "============== ----------------------- ============== ----------------------- ==============";
 			LOG(INFO) << endl;
-			LOG(INFO) << "============== ----------------------- ============== ----------------------- ==============" << endl;
 			for (int i = 0; i < iThreadCount; ++i)
 			{
 				if (threads[i].joinable())
@@ -571,7 +578,7 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 				}
 			}
 
-			Sleep(iScanTime); // XXX WIN
+			Sleep(iScanTime*SLEEP_MULTIPLE);
 			
 			file.clear();
 			file.seekg(0, ios::end); // 文件指针指到文件末尾
@@ -602,7 +609,7 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 
 			LOG(INFO) << endl;
 			LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
-			LOG(INFO) << "当前指针位置: " << pNewPos << "\t上次指针位置: " << pCurrPos << "\t增长文件大小: " << llFileSize << endl; // debug
+			LOG(INFO) << "当前指针位置: " << pNewPos << "\t上次指针位置: " << pCurrPos << "\t增长文件大小: " << llFileSize << endl;
 
 			if (llFileSize < 0)
 			{

@@ -4,10 +4,7 @@
 #define _UTILS_H
 
 #include <time.h>
-
-// XXX WINDOWS ONLY
-#include <atltime.h>
-
+// #include <atltime.h>
 #include <iostream>
 #include <string>
 #include <fstream>
@@ -80,7 +77,7 @@ public:
 
 	/*
 	 * @brief	行字符串转毫秒时间 (开始位置往后15位是日期时间,若>15位,则16-19为毫秒)
-	 * @param   strOrig				整个字符串
+	 * @param   strOrig			整个字符串
 								时间格式为:YYYYMMDD-HHMMSS; formate = (char*)"%4d%2d%2d-%2d%2d%2d
 	 * @param   iStart			字符串中时间开始位置
 	 * @param   iLe				字符串中**秒级*时间结束位置
@@ -151,7 +148,7 @@ public:
 	 * @param[in]   &strResp			返回的数据
 	 * @return      string				返回的数据
 	 */
-	UtilsError WebServiceAgent(string strJsonData, string &strResp);
+	int WebServiceAgent(string strJsonData, string &strResp);
 
 
 	/*

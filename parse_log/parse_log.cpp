@@ -9,7 +9,6 @@
 #include "mylibcurl.h"
 using namespace std;
 
-
 string strResp;
 char *loadedFile2[2];
 const char* filepath = "runlog_config.ini";
@@ -128,11 +127,15 @@ int main(int argv, char* argc[])
 	*/
 
 	// 打开文件 clutils.LoadFile
+	/*
 	if (UTILS_RTMSG_OK == clUtils.LoadFile(file))
 	{
 		cout << "文件打开成功" << endl;
 	}
+	*/
 
+	// 当前时间(毫秒)
+	/*
 	string nowdate = clUtils.m_stCurrSysTime.pDate;
 	string nowtime = clUtils.m_stCurrSysTime.pTime;
 	string nowms = clUtils.m_stCurrSysTime.pTimeMs;
@@ -140,6 +143,7 @@ int main(int argv, char* argc[])
 	cout << now << endl;
 	cout << clUtils.StringToMs(now, 0, 15) << endl;
 	cout << clUtils.GetCurrentTimeMs() << endl;
+	*/
 
 
 	// gsoap
@@ -467,7 +471,6 @@ int main(int argv, char* argc[])
 	// 清理
 	delete loadedFile2[0];
 	delete loadedFile2[1];
-	system("pause");
 	return 0;
 }
 

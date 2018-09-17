@@ -8,21 +8,39 @@
 # ***********************************************************
 # */
 
-# 平台
-PLATFORM = OS_IS_LINUX
-
-# Debug模式
-DEBUG_FLAG = _DEBUG
-
-# INC_PATH = /usr/local/include
-# LIB_PATH = /usr/local/lib
-
 .PHONY: all parse_log thread multi_thread clean
 
-all: parse_log.out multi_thread.out
+PARSE_PATH = $(HOME)/parse
 
-parse_log: parse_log.cpp log.cpp mylibcurl.cpp utils.cpp inifile.cpp multi_thread.cpp
-	g++ --std=c++11 -pthread log.cpp mylibcurl.cpp utils.cpp inifile.cpp multi_thread.cpp parse_log.cpp -lglog -lcurl -o parse_log.out
+CURR_PWD = $(shell pwd)
+
+
+PLATFORM = OS_IS_LINUX
+
+ifeq ($(PLATFORM), OS_IS_LINUX)
+	GLOG_LIB_PATH = $(HOME)/parse/glog/unix/lib
+	CURL_LIB_PATH = $(HOME)/parse/curl/unix/lib
+endif
+
+DEBUG_FLAG = _DEBUG
+
+DEBUG_OPS = -g -rdynamic
+
+# 头文件
+I_INCLUDE = -I$(PARSE_PATH)
+
+# 指定lib库的路径
+L_INCLUDE = -L$(GLOG_LIB_PATH) -L$(CURL_LIB_PATH)
+
+CFLAS = -D$(DEBUG_FLAG) -D$(PLATFORM) -DWITH_NONAMESPACES $(I_INCLUDE) $(DEBUG_OPS)
+
+LFLAG = -shared $(L_INCLUDE)
+
+
+all: parse_log multi_thread.out
+
+parse_log: parse_log.cpp log.cpp utils.cpp inifile.cpp multi_thread.cpp
+	g++ --std=c++11 $(CFLAS) -pthread log.cpp utils.cpp inifile.cpp multi_thread.cpp parse_log.cpp soapC.cpp stdsoap2.cpp soapSoapServiceSoapBindingProxy.cpp -lglog -lcurl -o parse_log
 
 
 multi_thread: multi_thread.out

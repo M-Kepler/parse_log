@@ -314,7 +314,7 @@ UtilsError CUtils::DoPost(char * pData, string &strResp)
 }
 
 
-UtilsError CUtils::WebServiceAgent(string strJsonData, string &strResp)
+int CUtils::WebServiceAgent(string strJsonData, string &strResp)
 {
 	int iRetCode = 0;
 	int iRet = 0;
@@ -357,7 +357,7 @@ UtilsError CUtils::WebServiceAgent(string strJsonData, string &strResp)
 	if (iRetCode != SOAP_OK)
 	{
 		LOG(ERROR) << "webservice 调用失败!" << "\t错误码为: " << iRetCode << endl;
-		return UTILS_WEBSERVICE_FAIL;
+		return iRetCode;
 	}
 	else
 	{
@@ -366,7 +366,7 @@ UtilsError CUtils::WebServiceAgent(string strJsonData, string &strResp)
 		strResp = *(pstrResponse->return_);
 		LOG(INFO) << "webservice 调用成功!"<< "\t发送给 webservice 的数据为 : " << strJsonData << endl;
 		LOG(INFO) << "webservice 返回的数据为: " << *(pstrResponse->return_) << endl;
-		return UTILS_RTMSG_OK;
+		return SOAP_OK;
 	}
 }
 
@@ -405,15 +405,19 @@ void CUtils::SoapProxyInit(struct soap *soap)
 // 组装的Json格式如下
 /*
 {
-	"REQUESTS": [{
-		"REQ_COMM_DATA": {
-			"service": "IRMSLBMRISKWARNING",
+	"REQUESTS":
+	[
+		{
+			"REQ_COMM_DATA":
+			{
+				"service": "IRMSLBMRISKWARNING",
 				"REGKEY_ID" : "CHECK_TICKET",
 				"LBM_CODE" : "L1190165",
 				"USER_CODE" : "1595156513"
 				...
+			}
 		}
-	}]
+	]
 }
 */
 
