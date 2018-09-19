@@ -388,11 +388,12 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 			// char* pMsgData = (char*)strPostData.c_str();
 			// utilsError = clUtils.DoPost(pMsgData, strResponse);
 
-			// iSoapRetCode = clUtils.WebServiceAgent(strPostData, strResponse);
+			iSoapRetCode = clUtils.WebServiceAgent(strPostData, strResponse);
 			// test
-
+			/*
 			iSoapRetCode  = 0;
 			strResponse = "OK";
+			*/
 
 			LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
 			LOG(INFO) << "==============-------------------------==============" << "发送的数据为:   " << "==============-------------------------==============" << endl;

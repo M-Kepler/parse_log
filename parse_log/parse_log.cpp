@@ -471,6 +471,7 @@ int main(int argv, char* argc[])
 	// «Â¿Ì
 	delete loadedFile2[0];
 	delete loadedFile2[1];
+	system("pause");
 	return 0;
 }
 

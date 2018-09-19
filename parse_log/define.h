@@ -20,7 +20,11 @@
 #endif
 
 //------------------------------------------------------------------------------
-// 第三方库: Libcurl
+// 第三方库: Libcurl依赖
+// 改为使用webservice了, libcurl库不需要,
+// 即关于libcurl的都可以删除:mylibcurl.h、utils.h中的dopost(),
+// Sleep()可跳转声明但还是提示没有定义是因为缺少了#include <windows.h>
+// 在代码中声明跟在visual studio项目属性-> 链接器->附加依赖项中输入一样的效果
 #pragma comment(lib, "Ws2_32")
 #pragma comment(lib, "Wldap32")
 #pragma comment(lib, "winmm")
@@ -46,8 +50,7 @@
 #define INVALID_HANDLE_VALUE -1
 #define DWORD unsigned long
 #define Sleep usleep
-// 为了兼容windows下的Sleep函数, 这里对Unix下的usleep做放大
-#define SLEEP_MULTIPLE 1000
+#define SLEEP_MULTIPLE 1000 // 为了兼容windows下的Sleep函数, 这里对Unix下的usleep做放大
 #else
 #define PATHSPLIT '\\'
 #define SLEEP_MULTIPLE 1
