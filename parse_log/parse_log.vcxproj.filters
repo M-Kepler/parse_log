@@ -21,9 +21,6 @@
     <ClCompile Include="inifile.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="multi_thread.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="utils.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -42,6 +39,9 @@
     <ClCompile Include="stdsoap2.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="LbmRiskWarning.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="runlog_config.ini" />
@@ -51,9 +51,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inifile.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="multi_thread.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="utils.h">
@@ -76,6 +73,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="stdsoap2.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="LbmRiskWarning.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

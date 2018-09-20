@@ -29,12 +29,6 @@ u版runlog
 # 任务列表
 
 
-## FIXME
-
-[ ] 我的异常应该怎么定义和抛出?
-[ ] 文件持续写入、multi_thread需要重构封装到类
-[ ] 超时扫描的优化
-
 ## TODO
 
 [*] **定时**扫描功能
@@ -45,14 +39,15 @@ u版runlog
 	[*] ans串还有cost字段
 [*] MFC 前端界面
 [*] 而且每天一个文件夹, 也没有处理
+[*] HTTP改为webservice了
+[ ] TimeOutScan函数要做成异步的,不能为了发送一条数据而堵死在那
 [ ] 一个请求分割多行的情况
 [ ] KCXP的日志? 三方网关的日志?
-[ ] HTTP
 
+## FIXME
 
 ## XXX
 
-[ ] 组合 iThreadCount 后再扫, 改为插入的时候就进行判断
 
 
 
@@ -61,7 +56,7 @@ u版runlog
 在编译的时候, 好像与第三方库的编译模式有关;比如我选择的是多线程调试 DLL (/MDd)模式,
 如果第三方库不是这个模式的话, 会有问题
 
-## GLog
+## GLog(编译成静态库)
 
 ### 编译安装
 
@@ -102,7 +97,7 @@ export LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/parse/glog/unix
 5. 配置属性-->链接器-->输入-->附加依赖项-->添加glogd.lib（如果你的程序是Release版本就写glog.lib）
 ```
 
-## libcurl
+## libcurl(已剔除,改用webservice)
 
 ### 编译安装
 

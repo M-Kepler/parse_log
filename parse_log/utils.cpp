@@ -87,7 +87,10 @@ time_t CUtils::StringToMs(string strOrig, int iStart, int iEnd)
 {
 	tm tm_;
 	string str;
+	int iMsStart;
 	int year, month, day, hour, minute, second;
+	string strLogType;
+
 	char * formate;
 	int iLen = iEnd - iStart;
 
@@ -98,6 +101,22 @@ time_t CUtils::StringToMs(string strOrig, int iStart, int iEnd)
 #else
 	sscanf_s(str.c_str(), formate, &year, &month, &day, &hour, &minute, &second);
 #endif
+
+	if (UTILS_RTMSG_OK != GetConfigValue(strLogType, "LogType"))
+	{
+		LOG(ERROR) << "获取配置LogType失败" << endl;
+		abort();
+	}
+	if (strLogType == "WIN")
+	{
+		iStart = iStart + 1;
+		iEnd = iEnd + 1;
+		iMsStart = 22;
+	}
+	else if (strLogType == "UNIX")
+	{
+		iMsStart = iEnd + 1;
+	}
 
 	tm_.tm_year = year - 1900;
 	tm_.tm_mon = month - 1;
@@ -115,7 +134,7 @@ time_t CUtils::StringToMs(string strOrig, int iStart, int iEnd)
 	else
 	{
 		// 20180202-091002-549327 取549为毫秒
-		time_t tm_ms = (tm_s * 1000) + stoi(strOrig.substr(iEnd + 1, 3)); // 转化为毫秒
+		time_t tm_ms = (tm_s * 1000) + stoi(strOrig.substr(iMsStart, 3)); // 转化为毫秒
 		return tm_ms;
 	}
 }
@@ -427,6 +446,7 @@ string CUtils::AssembleJson(string strReqData, string strAnsData, int iStart, in
 	int iVecSize;
 	bool isEmpty;
 	string strReqBuf;
+	string strLogType;
 	string strServiceName; // 服务名
 	UtilsError utilsError;
 	vector<string> vecStrBuf;
@@ -434,10 +454,17 @@ string CUtils::AssembleJson(string strReqData, string strAnsData, int iStart, in
 	rapidjson::StringBuffer strBuffer;
 	rapidjson::Writer<rapidjson::StringBuffer> writer(strBuffer);
 
-	if ((utilsError = GetConfigValue(strServiceName, "ServiceName", "CURL")) != UTILS_RTMSG_OK)
+	if ((utilsError = GetConfigValue(strServiceName, "ServiceName", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = GetConfigValue(strLogType, "LogType")) != UTILS_RTMSG_OK
+		)
 	{
 		LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
 		abort();
+	}
+
+	if (strLogType == "WIN")
+	{
+		iLen = 31;
 	}
 
 	if (strAnsData.empty())

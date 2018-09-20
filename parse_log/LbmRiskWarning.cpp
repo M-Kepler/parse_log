@@ -1,4 +1,4 @@
-#include "multi_thread.h"
+#include "LbmRiskWarning.h"
 
 char* loadedFile[2]; // 存放指向 char* 类型的指针的数组
 typedef unordered_multimap<string, string> LogMap;
@@ -267,8 +267,6 @@ void ParseMsgLine(vector<string> vecStr, int id, string strKey)
 	string MsgId;
 	LogMap *map = pLogMaps + id;
 
-	// XXX glog不是线程安全的?
-	// LOG(INFO) << "id: " << id << "\tstrKey: " << strKey << endl;
 	auto end = map->end();
 	if (!vecStr.empty())
 	{
@@ -323,7 +321,6 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 			if ((utilsError = clUtils.GetConfigValue(strLbmTimeOut, "LbmTimeOut")) != UTILS_RTMSG_OK )
 			{
 				LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
-				// TODO 异常抛出
 				abort();
 			}
 			iLbmTimeOut = stoll(strLbmTimeOut);
@@ -384,10 +381,11 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 		}
 		if (!strPostData.empty())
 		{
-			// 发送并删除
+			// libcurl 发送并删除
 			// char* pMsgData = (char*)strPostData.c_str();
 			// utilsError = clUtils.DoPost(pMsgData, strResponse);
 
+			// FIXME 需要改造成异步的, strPostData往发送队列里插,WebServiceAgent隔n时间扫描发送
 			iSoapRetCode = clUtils.WebServiceAgent(strPostData, strResponse);
 			// test
 			/*
@@ -404,7 +402,7 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 			if (0 != iSoapRetCode)
 			{
 				LOG(ERROR) << "==============-------------------------==============" << "发请求失败! " << "==============-------------------------==============" << endl;
-				LOG(ERROR) << "SOAP 错误码: " << iSoapRetCode << endl;
+				LOG(ERROR) << "调用返回错误码: " << iSoapRetCode << endl;
 			}
 			else
 			{
@@ -429,10 +427,17 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 
 	bool bBufferIndex = 0; // 缓存下标
 	bool bNeedWait = false;
+	string strMsgKey;
 	streamoff llThreadIndex, llThreadPart;
 	streamsize llRealSize; // 实际读入大小(因为可能遇到需要的单词被截位)
 	streamsize llFileLen;
 	thread *threads = new thread[iThreadCount];
+
+	if ((utilsError = clUtils.GetConfigValue(strMsgKey, "MsgKey")) != UTILS_RTMSG_OK)
+	{
+		LOG(ERROR) << "获取配置MsgKey失败" << endl;
+		abort();
+	}
 
 	while (llFileSize)
 	{
@@ -493,6 +498,7 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 				ThreadMap->clear();
 			}
 
+			// 扫描map的时间很短的, 但是发送的时间很长, 必须做成异步的
 			TimeoutScan(allLogMap, iAnsNum);
 
 		}
@@ -504,23 +510,10 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 		t_end = clock(); // debug
 		cout << "\nScan Complete in : " << t_end - t_start << "ms." << endl << endl; // debug
 
-
-
 		LOG(INFO) << endl;
 		LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
 		for (int i = 1; i < iThreadCount; ++i)
 		{
-			// test begin
-			// llThreadIndex += 1; // 下一个线程读取的开始位置, 跳过\n字符
-			// test end
-
-			/*
-			if (llThreadIndex != 0)
-			{
-				llThreadIndex += 1; // 下一个线程读取的开始位置, 跳过\n字符
-			}
-			*/
-
 			if (llThreadIndex != llRealSize) // 避免文件只有一行时getBlockSize报错
 			{
 				llFileLen = getBlockSize(bBufferIndex, llThreadIndex, llThreadPart);
@@ -532,7 +525,7 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 				LOG(INFO) << "线程 " << i << " 开始读入位置llThreadIndex: " << llThreadIndex << "\t实际线程 " << i << " 读入大小llFileLen:" << llFileLen << endl;
 				vecThreadLines = ReadLineToVec(bBufferIndex, llThreadIndex, llFileLen);
 				LOG(INFO) << "线程 " << i << " 共读入: " << vecThreadLines.size() << "行" << endl;
-				threads[i] = thread(ParseMsgLine, vecThreadLines, i, "MsgId");
+				threads[i] = thread(ParseMsgLine, vecThreadLines, i, strMsgKey);
 				llThreadIndex += llFileLen;
 			}
 			else
@@ -541,17 +534,13 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 			}
 		}
 
-		// test begin
-		// llThreadIndex += 1; // 下一个线程读取的开始位置, 跳过\n字符
-		// test end
-
 		LOG(INFO) << "线程 4 开始读入位置 llThreadIndex: " << llThreadIndex << "\t实际线程 4 读入大小 llRealSize-llThreadIndex: " << llRealSize - llThreadIndex << endl;
 		// XXX
 		// 一行请求不可能少于70个字符吧
 		if ((llRealSize - llThreadIndex) > 70)
 		{
 			vecEndThreadLines = ReadLineToVec(bBufferIndex, llThreadIndex, llRealSize - llThreadIndex);
-			threads[0] = thread(ParseMsgLine, vecEndThreadLines, 0, "MsgId");
+			threads[0] = thread(ParseMsgLine, vecEndThreadLines, 0, strMsgKey);
 			LOG(INFO) << "线程 4 " << "共读入: " << vecEndThreadLines.size() << "行" << endl;
 		}
 
@@ -584,27 +573,6 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 			file.clear();
 			file.seekg(0, ios::end); // 文件指针指到文件末尾
 			streampos pNewPos = file.tellg(); // 新的文件指针
-
-			// FIXME !!!!!!!
-			// XXX 需要做截位判断,否则只有一行的一部分
-			// begin
-			/*
-			int increSize = 0;
-			char chCurr[1] = { 0 };
-			file.read(chCurr, 1);
-			while (chCurr[0] != '\n' && chCurr[0] != '\0')
-			{
-				file.read(chCurr, 1);
-				cout << chCurr[0];
-				increSize++;
-			}
-			if (increSize > 0)
-			{
-				abort();
-			}
-			// pNewPos += increSize;
-			// end
-			*/
 
 			llFileSize = pNewPos - pCurrPos;
 

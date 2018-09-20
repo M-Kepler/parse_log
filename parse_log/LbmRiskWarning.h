@@ -13,7 +13,7 @@
 #include "utils.h"
 #include "define.h"
 
-using namespace std;
+ using namespace std;
 
 
 /*
@@ -100,7 +100,7 @@ streamsize inline getBlockSize(int iStep, streamoff llStart, streamsize llSize);
 * @param	strKey			从串中指定用哪个的hash值作为Key
 * @return	无
 */
-void ParseMsgLine(vector<string> vecStr, int id, string strKey = "MsgId");
+void ParseMsgLine(vector<string> vecStr, int id, string strKey);
 
 
 /*

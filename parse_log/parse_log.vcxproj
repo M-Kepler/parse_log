@@ -136,7 +136,7 @@
   <ItemGroup>
     <ClCompile Include="inifile.cpp" />
     <ClCompile Include="log.cpp" />
-    <ClCompile Include="multi_thread.cpp" />
+    <ClCompile Include="LbmRiskWarning.cpp" />
     <ClCompile Include="parse_log.cpp" />
     <ClCompile Include="soapC.cpp" />
     <ClCompile Include="soapSoapServiceSoapBindingProxy.cpp" />
@@ -155,7 +155,7 @@
     <ClInclude Include="makefile" />
     <ClInclude Include="inifile.h" />
     <ClInclude Include="log.h" />
-    <ClInclude Include="multi_thread.h" />
+    <ClInclude Include="LbmRiskWarning.h" />
     <ClInclude Include="soapH.h" />
     <ClInclude Include="soapSoapServiceSoapBindingProxy.h" />
     <ClInclude Include="soapStub.h" />
