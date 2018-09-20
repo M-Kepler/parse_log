@@ -248,7 +248,8 @@ UtilsError CUtils::TailLine(ifstream &file, int iLineNum, vector<string>& vecRet
 	return UTILS_RTMSG_OK;
 }
 
-
+/*改用webservice了*/
+/*
 UtilsError CUtils::DoPost(char * pData, string &strResp)
 {
 	string name;
@@ -312,7 +313,7 @@ UtilsError CUtils::DoPost(char * pData, string &strResp)
 	strResp = curl_easy_perform(pUrl); // 开始执行
 	return UTILS_RTMSG_OK;
 }
-
+*/
 
 int CUtils::WebServiceAgent(string strJsonData, string &strResp)
 {
@@ -333,7 +334,6 @@ int CUtils::WebServiceAgent(string strJsonData, string &strResp)
 
 	if ((utilsError = GetConfigValue(strWebServiceUrl, "WebServiceUrl", "CURL")) != UTILS_RTMSG_OK
 		|| (utilsError = GetConfigValue(strServiceName, "ServiceName", "CURL")) != UTILS_RTMSG_OK
-		|| (utilsError = GetConfigValue(strPort, "HttpPort", "CURL")) != UTILS_RTMSG_OK
 		)
 	{
 		LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;

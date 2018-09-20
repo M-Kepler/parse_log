@@ -13,10 +13,12 @@
 
 #ifdef _DEBUG
 #pragma comment(lib, "glogd")
-#pragma comment(lib, "libcurl_a_debug")
+/*改用webservice了*/
+//#pragma comment(lib, "libcurl_a_debug")
 #else
 #pragma comment(lib, "glog")
-#pragma comment(lib, "libcurl_a")
+/*改用webservice了*/
+// #pragma comment(lib, "libcurl_a")
 #endif
 
 //------------------------------------------------------------------------------
@@ -25,10 +27,13 @@
 // 即关于libcurl的都可以删除:mylibcurl.h、utils.h中的dopost(),
 // Sleep()可跳转声明但还是提示没有定义是因为缺少了#include <windows.h>
 // 在代码中声明跟在visual studio项目属性-> 链接器->附加依赖项中输入一样的效果
+/*改用webservice了*/
+/*
 #pragma comment(lib, "Ws2_32")
 #pragma comment(lib, "Wldap32")
 #pragma comment(lib, "winmm")
 #pragma comment(lib, "Crypt32")
+*/
 
 //------------------------------------------------------------------------------
 // 第三方库: Glog

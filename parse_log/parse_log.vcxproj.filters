@@ -30,9 +30,6 @@
     <ClCompile Include="log.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="mylibcurl.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="test.hpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -63,9 +60,6 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="log.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="mylibcurl.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="define.h">

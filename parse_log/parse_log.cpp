@@ -5,8 +5,11 @@
 #include "inifile.h"
 #include "multi_thread.h"
 #include "log.h"
+// ¸ÄÓÃwebservice
+/*
 #include <curl/curl.h>
 #include "mylibcurl.h"
+*/
 using namespace std;
 
 string strResp;

@@ -9,6 +9,7 @@
 #include <vector>
 #include <time.h>
 #include <thread>
+#include <Windows.h>
 #include "utils.h"
 #include "define.h"
 

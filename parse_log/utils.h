@@ -11,9 +11,12 @@
 #include "inifile.h"
 #include "log.h"
 
+/*改用webservice了*/
+/*
 // 这个封装用了很多windows的api
 // #include "mylibcurl.h"
 #include <curl/curl.h>
+*/
 
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
