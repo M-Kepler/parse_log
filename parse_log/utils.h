@@ -8,6 +8,10 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+
+#include <thread>
+#include <future>
+
 #include "inifile.h"
 #include "log.h"
 
@@ -64,7 +68,7 @@ public:
 	 * @param   filename		要打开的文件名
 	 * @return	enum			错误码
 	 */
-	UtilsError LoadFile(ifstream &file, string filename = "runlog0.log");
+	UtilsError LoadFile(ifstream &file) ;
 
 
 	/*
@@ -88,6 +92,8 @@ public:
 	 * @return	time_t			返回毫秒级时间
 	 */
 	time_t StringToMs(string strOrig, int iStart = 0, int iLen = 15);
+	// create_lbm.out测试数据
+	// time_t StringToMs(string strOrig, int iStart = 39, int iLen = 54);
 
 
 	/*
@@ -140,7 +146,7 @@ public:
 	 * @param	strResp			收到的数据
 	 * @return	UtilsError		错误码
 	 */
-	UtilsError DoPost(char* pData, string &strResp);
+	// UtilsError DoPost(char* pData, string &strResp);
 
 
 	/*
@@ -149,8 +155,14 @@ public:
 	 * @param[in]   &strResp			返回的数据
 	 * @return      string				返回的数据
 	 */
-	int WebServiceAgent(string strJsonData, string &strResp);
+	
+	// int WebServiceAgent(std::promise<string>&prom, string strJsonData, string &strResp);
+	string WebServiceAgent(string strJsonData, string &strResp);
+	// static int WebServiceAgent(string strJsonData, string &strResp);
 
+
+	// 访问异步操作的结果
+	void GetWebServiceRet(vector<future<string>>& vecfuResults);
 
 	/*
 	 * @brief       获取文件最后n行(兼容单行和行尾有空行的情况)
@@ -192,6 +204,9 @@ private:
 	string m_strErrorStr;
 
 	/* soap */
+	string m_strWebServiceUrl;
+	string m_strServiceName;
+
 	char m_szIsProxy[8 + 1];
 	char m_szProxyType[8 + 1];
 	char m_szProxyHost[32 + 1];	/* Proxy Server host name */

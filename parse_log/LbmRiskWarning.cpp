@@ -11,8 +11,11 @@ LogMap *ThreadMap;
 CUtils clUtils;
 UtilsError utilsError;
 
-string strResponse;
 vector<string> vecThreadLines, vecEndThreadLines;
+
+// ThreadPool pool(iSendThreadCount);
+ThreadPool pool(8);
+std::vector< std::future<string> > WebServiceRet;
 
 int iCount = 0;
 
@@ -20,6 +23,7 @@ int multi_thread()
 {
 	int iLineLen;
 	int iThreadCount;
+	int iSendThreadCount;
 	int iLineBuffer;
 	int iAnsNum;
 	int iScanTime;
@@ -27,6 +31,7 @@ int multi_thread()
 	string strLineBuffer;
 	string strLoadSize;
 	string strThreadCount;
+	string strSendThreadCount;
 	string strAnsNum;
 	string strScanTime;
 	string strIncreRead;
@@ -36,6 +41,7 @@ int multi_thread()
 	// 获取配置
 	if ((utilsError = clUtils.GetConfigValue(strLoadSize, "LoadSize")) != UTILS_RTMSG_OK
 		|| (utilsError = clUtils.GetConfigValue(strThreadCount, "ThreadCount")) != UTILS_RTMSG_OK
+		|| (utilsError = clUtils.GetConfigValue(strSendThreadCount, "SendThreadCount")) != UTILS_RTMSG_OK
 		|| (utilsError = clUtils.GetConfigValue(strLineBuffer, "LineBuffer")) != UTILS_RTMSG_OK
 		|| (utilsError = clUtils.GetConfigValue(strAnsNum, "AnsNum")) != UTILS_RTMSG_OK
 		|| (utilsError = clUtils.GetConfigValue(strScanTime, "ScanTime")) != UTILS_RTMSG_OK
@@ -51,8 +57,8 @@ int multi_thread()
 	iLineBuffer = stoi(strLineBuffer);
 	iAnsNum = stoi(strAnsNum);
 	iScanTime = stoi(strScanTime);
+	iSendThreadCount = stoi(strSendThreadCount);
 
-	// TODO
 	ios::sync_with_stdio(false);
 	pLogMaps = new LogMap[iThreadCount];
 
@@ -138,7 +144,9 @@ int multi_thread()
 				file.clear();
 				file.seekg(0, ios::end);
 				llLastLinePos = file.tellg();
-				Sleep(iScanTime * SLEEP_MULTIPLE);
+
+				chrono::milliseconds TimeOut(100);
+				this_thread::sleep_for(TimeOut);
 			}
 		}
 
@@ -154,6 +162,11 @@ int multi_thread()
 
 		LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
 		LOG(INFO) << "需分析文件大小: " << llFileSize << "\t分析开始位置: " << llStart << "\t分析结束位置: " << llEndFilePos << endl;
+
+		/*
+		ThreadPool pool(iSendThreadCount);
+		std::vector< std::future<string> > WebServiceRet;
+		*/
 
 		ParseLog(file, llFileSize, pCurrPos, strLoadSize, llMaxSize, llStart, iThreadCount, iAnsNum, iScanTime);
 
@@ -215,7 +228,6 @@ streamsize inline getBlockSize(int iStep, streamoff llStart, streamsize llSize)
 
 void inline readLoad(int iStep, ifstream *file, streamoff llStart, streamsize llSize)
 {
-	// XXX 一定要clear
 	// file->clear();
 	file->seekg(llStart);
 	// file->seekg(llStart);
@@ -295,6 +307,8 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 	string strModule;
 	string strPostData;
 	string strRetCode;
+	string strResponse;
+
 	auto begin = mymap.begin();
 	auto end = mymap.end();
 
@@ -327,7 +341,7 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 
 			if (((CurrTimeMs - MsgTimeMs) > iLbmTimeOut) && (strstr((begin->second).c_str(), "Req") != NULL))
 			{
-				// ans 串可能在下一个内存块,所以超时就删
+				// req串和ans串在两个内存块; 且req串已超时,则删除
 				LOG(INFO) <<  "扫描时间(ms): " << CurrTimeMs << "\tReq串时间(ms): " << MsgTimeMs << "\t时间差: " << CurrTimeMs - MsgTimeMs;
 				LOG(INFO) << endl;
 
@@ -339,22 +353,23 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 			}
 			else if (((CurrTimeMs - MsgTimeMs) > iLbmTimeOut) && (strstr((begin->second).c_str(), "Ans") != NULL))
 			{
-				// ans 串对应的req串已因超时被删除了, ans串在下一个内存块,也删掉
+				// req串和ans串在两个内存块; 且ans 串对应的req串已因超时被删除了,则ans也删掉
 				begin = mymap.erase(begin);
 				begin = mymap.begin();
 			}
 			else
 			{
+				// req串和ans串在两个内存块; req串未超时,跳过,(处理下一个内存块的时候, 会找到它对应的ans串的,这点时间延迟能接收)
 				begin++;
 			}
-
 		}
 		else
 		{
 			if ((strstr((begin->second).c_str(), "Ans") != NULL))
 			{
 				strRetCode = clUtils.GetMsgValue(begin->second, "&_1");
-				
+
+				// 没超时, 但ans报错
 				if (((strModule == "KBSS") && (strRetCode != "0"))
 					|| ((strModule == "CTS") && (strRetCode != "0"))
 					)
@@ -368,7 +383,6 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 							break;
 						}
 					}
-					// 报错的lbm的ans串
 					strPostData = clUtils.AssembleJson(iterReqData->second, begin->second);
 				}
 			}
@@ -379,6 +393,7 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 			begin = mymap.begin();
 			// end = mymap.end();
 		}
+
 		if (!strPostData.empty())
 		{
 			// libcurl 发送并删除
@@ -386,29 +401,37 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 			// utilsError = clUtils.DoPost(pMsgData, strResponse);
 
 			// FIXME 需要改造成异步的, strPostData往发送队列里插,WebServiceAgent隔n时间扫描发送
-			iSoapRetCode = clUtils.WebServiceAgent(strPostData, strResponse);
-			// test
+			// 这样也不行, 当进入下一个循环的时候会崩掉,除非给每个进到这里的循环都心开两条线程来异步处理发送过程
+			// 最好是把要发送的放到一个队列里, 然后访问这个队列进行异步发送, 可是我怎么知道该消息对应的返回结果呢
+			// 线程池 https://blog.csdn.net/caoshangpa/article/details/80374651
+			// thrift
+			// iSoapRetCode = clUtils.WebServiceAgent(strPostData, strResponse);
+
+			// 1.
 			/*
-			iSoapRetCode  = 0;
-			strResponse = "OK";
+			std::promise<string> prom;                           // 生成一个 std::promise 对象.
+			std::future<string> fut = prom.get_future();         // 和 future 关联.
+			// 多线程使用类成员函数
+			std::thread ThreadSend(&CUtils::WebServiceAgent, &clUtils, std::ref(prom), strPostData, std::ref(strResponse));            // 将 prom交给另外一个线程t1 注：std::ref,promise对象禁止拷贝构造，以引用方式传递
+			std::thread ThreadGetRet(&CUtils::GetWebServiceRet, &clUtils, std::ref(fut));        // 将 future 交给另外一个线程t.
+
+			if (ThreadSend.joinable() && ThreadGetRet.joinable())
+			{
+				ThreadSend.join();
+				ThreadGetRet.join();
+			}
 			*/
 
-			LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
-			LOG(INFO) << "==============-------------------------==============" << "发送的数据为:   " << "==============-------------------------==============" << endl;
-			LOG(INFO) << strPostData << endl;
-			LOG(INFO) << "==============-------------------------==============" << "收到的回复为:   " << "==============-------------------------==============" << endl;
-			LOG(INFO) << strResponse << endl;
+			// 2. 线程池,之所以之前要等发送完毕才进入下一个循环是因为线程池不是在这里创建的 
+			/*
+			ThreadPool pool(4);
+			auto result = pool.enqueue(CUtils::WebServiceAgent, strPostData, strResponse);
+			*/
 
-			if (0 != iSoapRetCode)
-			{
-				LOG(ERROR) << "==============-------------------------==============" << "发请求失败! " << "==============-------------------------==============" << endl;
-				LOG(ERROR) << "调用返回错误码: " << iSoapRetCode << endl;
-			}
-			else
-			{
-				strPostData = "";
-				LOG(INFO) << "==============-------------------------==============" << "发请求成功! " << "==============-------------------------==============" << endl;
-			}
+			// 3. 线程池
+			WebServiceRet.emplace_back(pool.enqueue(&CUtils::WebServiceAgent, clUtils, strPostData, strResponse));
+
+			strPostData = "";
 		}
 
 	}
@@ -431,6 +454,7 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 	streamoff llThreadIndex, llThreadPart;
 	streamsize llRealSize; // 实际读入大小(因为可能遇到需要的单词被截位)
 	streamsize llFileLen;
+	streampos pNewPos;
 	thread *threads = new thread[iThreadCount];
 
 	if ((utilsError = clUtils.GetConfigValue(strMsgKey, "MsgKey")) != UTILS_RTMSG_OK)
@@ -499,8 +523,14 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 			}
 
 			// 扫描map的时间很短的, 但是发送的时间很长, 必须做成异步的
+			std::promise<string> prom;                           // 生成一个 std::promise 对象.
+			std::future<string> fut = prom.get_future();         // 和 future 关联.
 			TimeoutScan(allLogMap, iAnsNum);
-
+			// 不管发送结果了
+			/*
+			 thread WatchRetJob(&CUtils::GetWebServiceRet, clUtils, std::ref(WebServiceRet));
+			 WatchRetJob.join();
+			*/
 		}
 		else
 		{
@@ -514,7 +544,7 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 		LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
 		for (int i = 1; i < iThreadCount; ++i)
 		{
-			if (llThreadIndex != llRealSize) // 避免文件只有一行时getBlockSize报错
+			if (llThreadIndex != llRealSize) // 避免文件只有一行时 getBlockSize 报错
 			{
 				llFileLen = getBlockSize(bBufferIndex, llThreadIndex, llThreadPart);
 			}
@@ -568,13 +598,17 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 				}
 			}
 
-			Sleep(iScanTime*SLEEP_MULTIPLE);
-			
-			file.clear();
-			file.seekg(0, ios::end); // 文件指针指到文件末尾
-			streampos pNewPos = file.tellg(); // 新的文件指针
-
-			llFileSize = pNewPos - pCurrPos;
+			// 持续监控文件增长
+			do 
+			{
+				std::chrono::milliseconds TimeOut(100);
+				// Sleep(iScanTime*SLEEP_MULTIPLE);
+				std::this_thread::sleep_for(TimeOut);
+				file.clear();
+				file.seekg(0, ios::end); // 文件指针指到文件末尾
+				pNewPos = file.tellg(); // 新的文件指针
+				llFileSize = pNewPos - pCurrPos;
+			} while (llFileSize <= 0);
 
 			LOG(INFO) << endl;
 			LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;

@@ -1,15 +1,20 @@
 #include <iostream>
-#include <thread>
 #include <sys/timeb.h>
 #include <mutex>
 #include "inifile.h"
 #include "LbmRiskWarning.h"
 #include "log.h"
+
+#include <thread>
+#include <future>
+#include "ThreadPool.h"
+
 // 改用webservice
 /*
 #include <curl/curl.h>
 #include "mylibcurl.h"
 */
+
 using namespace std;
 
 string strResp;
@@ -20,6 +25,7 @@ const char* filename = "test.log";
 
 mutex sLock;
 int i = 0;
+
 void test()
 {
 	for (int j = 0; j < 1000; j++)
@@ -99,6 +105,37 @@ const std::string getCurrentSystemTime()
 }
 
 
+void task(std::promise<string>& prom, string strJsonData, string &strResp)
+{
+	int x = 0;
+	 // 这里一般一个非常耗时耗cpu的操作，在此过程中得到x的最终值，这里我们直接赋值为10
+	x = 10;
+	prom.set_value(strResp);         //设置共享状态的值，同时promise会设置为ready
+}
+
+// 访问异步操作的结果
+void print_int(std::future<string>& fut)
+{
+	string x = fut.get();          //如果共享状态没有设置ready，调用get会阻塞当前线程
+	std::cout << "value: " << x << '\n';
+
+}
+
+
+void prrr(vector<future<int>>& results)
+{
+	std::chrono::milliseconds TimeOut(100);
+	for (auto && result : results)
+	{
+		while (result.wait_for(TimeOut) != std::future_status::ready)
+		{
+			std::cout << ".";
+		}
+		std::cout << std::endl;
+	}
+}
+
+
 int main(int argv, char* argc[])
 {
 	CGlog *p_glog = CGlog::GetInstance();
@@ -112,7 +149,9 @@ int main(int argv, char* argc[])
 
 	string str_buf = "_ENDIAN=0&F_OP_USER=9999&F_OP_ROLE=2&F_SESSION=0123456789&F_OP_SITE=0050569e247d&F_OP_BRANCH=999&F_CHANNEL=0&USE_NODE_FUNC=522210&CUSTOMER=180022892&MARKET=0&BOARD=0&SECU_ACC=0139680203&NO_CHECK_STATUS=1";
 	string str_req = "20180430-211359-522345-18225    99 Req: LBM=L0301002, MsgId=0000000100F462171E4D4B25, Len=299, Buf=_ENDIAN=0&F_OP_USER=9999&F_OP_ROLE=2&F_SESSION=0123456789&F_OP_SITE=0050569e247d&F_OP_BRANCH=999&F_CHANNEL=0&USE_NODE_FUNC=106127&CUSTOMER=150165853&MARKET=1&BOARD=0";
-	string str_ans = "20180719-094803-110762-12343    98 Ans: LBM=L1160005, MsgId=000001050001D55B1F297DD2, Len=792, Cost=161, Buf=&_1=0, 0, 业务程序运行正常, &_2=13863, 2, 21, 开户权限组<营业部>, 0, 10012, 2011-07-11 17:12:43.299541";
+	// string str_ans = "20180719-094803-110762-12343    98 Ans: LBM=L1160005, MsgId=000001050001D55B1F297DD2, Len=792, Cost=161, Buf=&_1=0, 0, 业务程序运行正常, &_2=13863, 2, 21, 开户权限组<营业部>, 0, 10012, 2011-07-11 17:12:43.299541";
+	string str_ans = "20180202-091406-895813-18190    98 Ans: LBM=L0301042, MsgId=0000000100F465BE1E4D4B5E, Len=268, Buf=&_1=2,10233001,用户代码[150165853],客户[55345]不存在";
+
 
 	// 读取文件
 	CUtils clUtils;
@@ -121,6 +160,52 @@ int main(int argv, char* argc[])
 	streamoff start = 0;
 	streamsize size;
 	int iLen;
+
+	// AssembleJson、WebServiceAgent
+	/*
+	string strJson = clUtils.AssembleJson(str_req, str_ans, 0, 19);
+	cout << strJson << endl;
+	string strResp;
+	clUtils.WebServiceAgent(strJson, strResp);
+	*/
+
+	// 线程池
+	/*
+	string strPostData = "send";
+	string strResponse;
+
+
+	ThreadPool pool(4);
+	std::vector< std::future<int> > results;
+
+	for (int i = 0; i < 8; ++i)
+	{ 
+		// results.emplace_back(pool.enqueue(&CUtils::WebServiceAgent, clUtils, strPostData, strResponse));
+		// results.emplace_back(pool.enqueue(clUtils.WebServiceAgent, strPostData, strResponse));
+		results.emplace_back(
+			pool.enqueue([i]
+		{
+			std::cout << "hello-" << i << std::endl;
+			std::this_thread::sleep_for(std::chrono::seconds(1));
+			std::cout << "world-" << i << std::endl;
+			return i * i;
+		})
+		);
+	}
+
+	cout << "for循环外" << endl;
+
+	thread watchjob(prrr, std::ref(results));
+	*/
+
+	/*
+	while (1)
+	{
+		Sleep(1000);
+		cout << "我去做别的事了" << endl;
+	}
+	*/
+
 
 	// 打开文件
 	/*
@@ -131,6 +216,7 @@ int main(int argv, char* argc[])
 	}
 	*/
 
+
 	// 打开文件 clutils.LoadFile
 	/*
 	if (UTILS_RTMSG_OK == clUtils.LoadFile(file))
@@ -138,6 +224,7 @@ int main(int argv, char* argc[])
 		cout << "文件打开成功" << endl;
 	}
 	*/
+
 
 	// 当前时间(毫秒)
 	/*
@@ -168,15 +255,6 @@ int main(int argv, char* argc[])
 	{
 		LOG(ERROR) << "Lbm Risk Warning Error" << endl;
 	}
-	*/
-
-	// CUtils::AssembleJson
-	/*
-	string strJson = clUtils.AssembleJson(str_req, str_ans, 0, 19);
-	cout << clUtils.AssembleJson(str_req, str_ans, 0, 19) << endl;
-	string strResp;
-	clUtils.WebServiceAgent(strJson, strResp);
-	cout << strResp;
 	*/
 
 	//  libcurl 提交 xml 给 webservice
@@ -299,6 +377,7 @@ int main(int argv, char* argc[])
 	}
 	*/
 
+
 	// 字符串切割
 	/*
 	vector<string> splitRet;
@@ -309,6 +388,7 @@ int main(int argv, char* argc[])
 		splitRet2 = clUtils.SplitString(splitRet[i], "=");
 	}
 	*/
+
 
 	/*
 	// XXX 换行符
@@ -429,7 +509,6 @@ int main(int argv, char* argc[])
 	cout << "当前时间(毫秒): " << clUtils.GetCurrentTimeMs() << endl;
 	*/
 
-
 	// libcurl
 	/*
 	CURL *curl = nullptr;
@@ -457,6 +536,7 @@ int main(int argv, char* argc[])
 
 
 	// clUtils.DoPost
+
 	/*
 	// 发送数据的格式是:name=value&name2=value2&name3=value3";
 	char *pData = (char*)"username=870131615@qq.com&password=159357yp";

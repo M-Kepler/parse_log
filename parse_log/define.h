@@ -54,11 +54,11 @@
 #define HANDLE void*
 #define INVALID_HANDLE_VALUE -1
 #define DWORD unsigned long
-#define Sleep usleep
+// #define Sleep usleep
 #define SLEEP_MULTIPLE 1000 // 为了兼容windows下的Sleep函数, 这里对Unix下的usleep做放大
 #else
 #define PATHSPLIT '\\'
-#define SLEEP_MULTIPLE 1
+// #define SLEEP_MULTIPLE 1
 # endif
 
 #endif

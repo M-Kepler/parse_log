@@ -10,7 +10,15 @@
 
 CUtils::CUtils()
 {
+	UtilsError utilsError;
 	SysNowTime();// 初始化时间
+	if ((utilsError = GetConfigValue(m_strWebServiceUrl, "WebServiceUrl", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = GetConfigValue(m_strServiceName, "ServiceName", "CURL")) != UTILS_RTMSG_OK
+		)
+	{
+		LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
+		// TODO 异常抛出
+	}
 }
 
 
@@ -19,14 +27,17 @@ CUtils::~CUtils()
 }
 
 
-UtilsError CUtils::LoadFile(ifstream &file, string filename)
+UtilsError CUtils::LoadFile(ifstream &file)
 {
+	string filename;
 	string strFileName;
 	string strData;
 	string strRunLogPath;
 	UtilsError utilsError;
 
-	if ((utilsError = GetConfigValue(strRunLogPath, "RunLogPath")) != UTILS_RTMSG_OK)
+	if ((utilsError = GetConfigValue(strRunLogPath, "RunLogPath")) != UTILS_RTMSG_OK
+		|| (utilsError = GetConfigValue(filename, "FileName")) != UTILS_RTMSG_OK
+		)
 	{
 		LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
 		// TODO 异常抛出
@@ -96,6 +107,7 @@ time_t CUtils::StringToMs(string strOrig, int iStart, int iEnd)
 
 	formate = (char*)"%4d%2d%2d-%2d%2d%2d";
 	str = strOrig.substr(iStart, iLen);
+
 #ifdef OS_IS_LINUX
 	sscanf(str.c_str(), formate, &year, &month, &day, &hour, &minute, &second);
 #else
@@ -334,7 +346,8 @@ UtilsError CUtils::DoPost(char * pData, string &strResp)
 }
 */
 
-int CUtils::WebServiceAgent(string strJsonData, string &strResp)
+
+string CUtils::WebServiceAgent(string strJsonData, string &strResp)
 {
 	int iRetCode = 0;
 	int iRet = 0;
@@ -351,13 +364,14 @@ int CUtils::WebServiceAgent(string strJsonData, string &strResp)
 	string strHttpHeader; // 请求头
 	UtilsError utilsError;
 
+	// for 线程池
 	if ((utilsError = GetConfigValue(strWebServiceUrl, "WebServiceUrl", "CURL")) != UTILS_RTMSG_OK
 		|| (utilsError = GetConfigValue(strServiceName, "ServiceName", "CURL")) != UTILS_RTMSG_OK
 		)
 	{
 		LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
 		// TODO 异常抛出
-		return utilsError;
+		return to_string(utilsError);
 	}
 
 	SoapServiceSoapBindingProxy proxy(strWebServiceUrl.c_str(), SOAP_C_UTFSTRING);
@@ -366,28 +380,47 @@ int CUtils::WebServiceAgent(string strJsonData, string &strResp)
 
 	pInput->requestXml = &strJsonData;
 
-	/*
-	soap_init(&LbmRiskSoap);
-	SoapProxyInit(&LbmRiskSoap);
-	soap_set_mode(&LbmRiskSoap, SOAP_C_UTFSTRING);
-	*/
-
 	iRetCode = proxy.doService(pInput, *pstrResponse);
+
+	LOG(INFO) << "==============-------------------------==============" << "发送的数据为:   " << "==============-------------------------==============" << endl;
+	LOG(INFO) << strJsonData << endl;
+
 	if (iRetCode != SOAP_OK)
 	{
-		LOG(ERROR) << "webservice 调用失败!" << "\t错误码为: " << iRetCode << endl;
-		return iRetCode;
+		LOG(ERROR) << "==============-------------------------==============" << "webservice 调用失败,错误码为: " << iRetCode << "==============-------------------------==============" << endl;
+		return to_string(iRetCode);
 	}
 	else
 	{
-		// XXX 中文乱码
-		// XXX 返回的是json,还需要解析
+		// FIXME 中文乱码
 		strResp = *(pstrResponse->return_);
-		LOG(INFO) << "webservice 调用成功!"<< "\t发送给 webservice 的数据为 : " << strJsonData << endl;
-		LOG(INFO) << "webservice 返回的数据为: " << *(pstrResponse->return_) << endl;
-		return SOAP_OK;
+		LOG(INFO) << "==============-------------------------==============" << "webservice 调用成功! " << "==============-------------------------==============" << endl;
+		LOG(INFO) << "==============-------------------------==============" << "webservice 返回的数据为: " << "==============-------------------------==============" << endl;
+		LOG(INFO) << *(pstrResponse->return_) << endl;
+		LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
+		return *(pstrResponse->return_);
 	}
 }
+
+
+void CUtils::GetWebServiceRet(vector<future<string>>& vecfuResults)
+{
+	// std::chrono::milliseconds TimeOut(100);
+	for (auto && result : vecfuResults)
+	{
+		/*
+		while (result.wait_for(TimeOut) != std::future_status::ready)
+		{
+			std::cout << ".";
+		}
+		*/
+		string strWebServiceRet = result.get();
+		LOG(INFO) << "==============-------------------------==============" << "收到的回复为:   " << "==============-------------------------==============" << endl;
+		LOG(INFO) << strWebServiceRet << endl;
+	}
+
+}
+
 
 vector<string> CUtils::SplitString(string strOrig, string strSplit)
 {
@@ -444,7 +477,7 @@ void CUtils::SoapProxyInit(struct soap *soap)
 string CUtils::AssembleJson(string strReqData, string strAnsData, int iStart, int iLen)
 {
 	int iVecSize;
-	bool isEmpty;
+	bool bAnsIsEmpty;
 	string strReqBuf;
 	string strLogType;
 	string strServiceName; // 服务名
@@ -469,11 +502,11 @@ string CUtils::AssembleJson(string strReqData, string strAnsData, int iStart, in
 
 	if (strAnsData.empty())
 	{
-		isEmpty = true;
+		bAnsIsEmpty = true;
 	}
 	else
 	{
-		isEmpty = false;
+		bAnsIsEmpty = false;
 	}
 
 	writer.StartObject();
@@ -505,7 +538,7 @@ string CUtils::AssembleJson(string strReqData, string strAnsData, int iStart, in
 		vecStrSubBuf = SplitString(vecStrBuf[i], "=");
 		iVecSize = vecStrSubBuf.size();
 		writer.String(vecStrSubBuf[0].c_str());
-		// 有的参数=号后面没有值
+		// 有的参数"="号后面没有值
 		if (iVecSize < 2)
 		{
 			writer.String("");
@@ -517,14 +550,46 @@ string CUtils::AssembleJson(string strReqData, string strAnsData, int iStart, in
 	}
 
 
-	if (!isEmpty)
+	if (!bAnsIsEmpty)
 	{
 		writer.String("AnsTime");
 		writer.String(strAnsData.substr(iStart, iLen).c_str());
+
+		string strAnsRet1 = GetMsgValue(strAnsData, "&_1", "&_2");
+
+		// 去除结果集中的 '[' 和 ']' 字符
+		for (auto it = strAnsRet1.begin(); it != strAnsRet1.end(); it++)
+		{
+			if (*it == '[' || *it == ']')
+			{
+				strAnsRet1.erase(it);
+				it--;
+			}
+		}
+
+		// ans 传则出错 
+		writer.String("AnsTime");
+		writer.String("");
 		writer.String("AnsRet1");
-		writer.String(GetMsgValue(strAnsData, "&_1", "&_2").c_str());
+		writer.String("");
 		writer.String("AnsRet2");
-		writer.String(GetMsgValue(strAnsData, "&_2", "`").c_str()); // XXX `字符是为了截取&_2往后的字符串
+		writer.String("");
+
+		/*
+		size_t uiFlag = strAnsRet1.substr(0).find(',');
+		size_t uiCode = strAnsRet1.substr(uiFlag + 1).find(',');
+
+		writer.String("AnsRet1_Flag");
+		writer.String(strAnsRet1.substr(0, 1).c_str());
+		writer.String("AnsRet1_RetCode");
+		writer.String(strAnsRet1.substr(2, uiCode).c_str());
+		writer.String("AnsRet1_RetMsg");
+		writer.String(strAnsRet1.substr(uiCode + 1 + uiFlag + 1).c_str());
+
+		writer.String("AnsRet2");
+		// XXX 确保ans串中没有``字符串才能截取&_2往后的字符串
+		writer.String(GetMsgValue(strAnsData, "&_2", "``").c_str());
+		*/
 	}
 	else
 	{
@@ -535,6 +600,7 @@ string CUtils::AssembleJson(string strReqData, string strAnsData, int iStart, in
 		writer.String("AnsRet2");
 		writer.String("");
 	}
+
 
 	writer.EndObject(); // end REQ_COMM_DATA
 	writer.EndObject(); // end REQUESTS

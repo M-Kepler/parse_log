@@ -198,3 +198,11 @@ MsgId=0D2C8E8E16BF4E7EADA4684D7FA29E9A,20180908-201040-624,Ans:144624
 会在clUtils.StringToMs(begin->second);的时候爆出来
 一层层往上打abort()并利用监视器追溯, 最终追溯到strToken = strtok_s(pLineBuffer, strDelim, &nextToken);
 怀疑是strtok把数据截断了,在调用strtok之前还是完整的一行
+
+
+
+
+### c++11 往多线程函数传递引用参数时会报错:rror C2672: “std::invoke”: 未找到匹配的重载函数
+https://blog.csdn.net/pengh56/article/details/78244509
+引用参数的入参为 str::ref(refData)
+

@@ -8,10 +8,18 @@
 #include <unordered_map>
 #include <vector>
 #include <time.h>
+
 #include <thread>
-#include <Windows.h>
+#include <future>
+#include "ThreadPool.h"
+
 #include "utils.h"
 #include "define.h"
+
+#ifdef OS_IS_LINUX
+#else
+#include <Windows.h>
+#endif
 
  using namespace std;
 
@@ -109,7 +117,9 @@ void ParseMsgLine(vector<string> vecStr, int id, string strKey);
  * @param   iAnsNum			一条req可对应的ans串的数量
  * @return	return			return_command
  */
+// void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum, std::promise<string> prom);
 void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum);
+
 
 /*
  * @brief	关键处理函数

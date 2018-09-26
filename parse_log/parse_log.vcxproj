@@ -160,6 +160,7 @@
     <ClInclude Include="soapSoapServiceSoapBindingProxy.h" />
     <ClInclude Include="soapStub.h" />
     <ClInclude Include="stdsoap2.h" />
+    <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>

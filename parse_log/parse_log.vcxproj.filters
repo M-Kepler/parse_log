@@ -78,6 +78,9 @@
     <ClInclude Include="LbmRiskWarning.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="ThreadPool.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="runlog0.log" />
