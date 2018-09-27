@@ -206,3 +206,12 @@ MsgId=0D2C8E8E16BF4E7EADA4684D7FA29E9A,20180908-201040-624,Ans:144624
 https://blog.csdn.net/pengh56/article/details/78244509
 引用参数的入参为 str::ref(refData)
 
+
+
+### gsoap发送的数据包含中文时, webservice无法接收的问题
+
+```
+	// SoapServiceSoapBindingProxy proxy(strWebServiceUrl.c_str(), SOAP_C_UTFSTRING);
+	改为:
+	SoapServiceSoapBindingProxy proxy(strWebServiceUrl.c_str(), SOAP_C_MBSTRING);
+```

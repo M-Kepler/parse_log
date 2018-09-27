@@ -523,13 +523,11 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 			}
 
 			// 扫描map的时间很短的, 但是发送的时间很长, 必须做成异步的
-			std::promise<string> prom;                           // 生成一个 std::promise 对象.
-			std::future<string> fut = prom.get_future();         // 和 future 关联.
 			TimeoutScan(allLogMap, iAnsNum);
-			// 不管发送结果了
+			// 不关心异步操作的返回值
 			/*
-			 thread WatchRetJob(&CUtils::GetWebServiceRet, clUtils, std::ref(WebServiceRet));
-			 WatchRetJob.join();
+			thread WatchRetJob(&CUtils::GetWebServiceRet, clUtils, std::ref(WebServiceRet));
+			// WatchRetJob.detach();
 			*/
 		}
 		else

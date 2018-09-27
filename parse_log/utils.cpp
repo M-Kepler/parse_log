@@ -1,4 +1,5 @@
 #include "utils.h"
+
 /*gsoap*/
 #include "SoapServiceSoapBinding.nsmap"
 #include "soapSoapServiceSoapBindingProxy.h"
@@ -347,6 +348,37 @@ UtilsError CUtils::DoPost(char * pData, string &strResp)
 */
 
 
+string CUtils::WString2String(const std::wstring& ws)
+{
+	std::string strLocale = setlocale(LC_ALL, "");
+	const wchar_t* wchSrc = ws.c_str();
+	size_t nDestSize = wcstombs(NULL, wchSrc, 0) + 1;
+	char *chDest = new char[nDestSize];
+	memset(chDest, 0, nDestSize);
+	wcstombs(chDest, wchSrc, nDestSize);
+	std::string strResult = chDest;
+	delete[]chDest;
+	setlocale(LC_ALL, strLocale.c_str());
+	return strResult;
+}
+
+
+wstring CUtils::String2WString(const std::string& s)
+{
+	std::string strLocale = setlocale(LC_ALL, "");
+	const char* chSrc = s.c_str();
+	size_t nDestSize = mbstowcs(NULL, chSrc, 0) + 1;
+	wchar_t* wchDest = new wchar_t[nDestSize];
+	wmemset(wchDest, 0, nDestSize);
+	mbstowcs(wchDest, chSrc, nDestSize);
+	std::wstring wstrResult = wchDest;
+	delete[]wchDest;
+	setlocale(LC_ALL, strLocale.c_str());
+	return wstrResult;
+}
+
+
+
 string CUtils::WebServiceAgent(string strJsonData, string &strResp)
 {
 	int iRetCode = 0;
@@ -364,7 +396,6 @@ string CUtils::WebServiceAgent(string strJsonData, string &strResp)
 	string strHttpHeader; // 请求头
 	UtilsError utilsError;
 
-	// for 线程池
 	if ((utilsError = GetConfigValue(strWebServiceUrl, "WebServiceUrl", "CURL")) != UTILS_RTMSG_OK
 		|| (utilsError = GetConfigValue(strServiceName, "ServiceName", "CURL")) != UTILS_RTMSG_OK
 		)
@@ -374,7 +405,10 @@ string CUtils::WebServiceAgent(string strJsonData, string &strResp)
 		return to_string(utilsError);
 	}
 
-	SoapServiceSoapBindingProxy proxy(strWebServiceUrl.c_str(), SOAP_C_UTFSTRING);
+	// 如果发送的数据有中文, 对接的webservice 不认
+	// SoapServiceSoapBindingProxy proxy(strWebServiceUrl.c_str(), SOAP_C_MBSTRING);
+	SoapServiceSoapBindingProxy proxy(strWebServiceUrl.c_str(), SOAP_C_MBSTRING);
+
 	ns1__doService *pInput = new ns1__doService();
 	ns1__doServiceResponse *pstrResponse = new ns1__doServiceResponse();
 
@@ -382,12 +416,13 @@ string CUtils::WebServiceAgent(string strJsonData, string &strResp)
 
 	iRetCode = proxy.doService(pInput, *pstrResponse);
 
+
 	LOG(INFO) << "==============-------------------------==============" << "发送的数据为:   " << "==============-------------------------==============" << endl;
 	LOG(INFO) << strJsonData << endl;
-
 	if (iRetCode != SOAP_OK)
 	{
-		LOG(ERROR) << "==============-------------------------==============" << "webservice 调用失败,错误码为: " << iRetCode << "==============-------------------------==============" << endl;
+
+		LOG(ERROR) << "==============-------------------------==============" << "webservice 调用失败, 错误码为: " << iRetCode << "==============-------------------------==============" << endl;
 		return to_string(iRetCode);
 	}
 	else
@@ -395,10 +430,10 @@ string CUtils::WebServiceAgent(string strJsonData, string &strResp)
 		// FIXME 中文乱码
 		strResp = *(pstrResponse->return_);
 		LOG(INFO) << "==============-------------------------==============" << "webservice 调用成功! " << "==============-------------------------==============" << endl;
-		LOG(INFO) << "==============-------------------------==============" << "webservice 返回的数据为: " << "==============-------------------------==============" << endl;
-		LOG(INFO) << *(pstrResponse->return_) << endl;
+		// LOG(INFO) << "==============-------------------------==============" << "webservice 返回的数据为: " << "==============-------------------------==============" << endl;
+		// LOG(INFO) << strResp << endl;
 		LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
-		return *(pstrResponse->return_);
+		return strResp;
 	}
 }
 
@@ -408,12 +443,6 @@ void CUtils::GetWebServiceRet(vector<future<string>>& vecfuResults)
 	// std::chrono::milliseconds TimeOut(100);
 	for (auto && result : vecfuResults)
 	{
-		/*
-		while (result.wait_for(TimeOut) != std::future_status::ready)
-		{
-			std::cout << ".";
-		}
-		*/
 		string strWebServiceRet = result.get();
 		LOG(INFO) << "==============-------------------------==============" << "收到的回复为:   " << "==============-------------------------==============" << endl;
 		LOG(INFO) << strWebServiceRet << endl;
@@ -472,7 +501,6 @@ void CUtils::SoapProxyInit(struct soap *soap)
 	]
 }
 */
-
 
 string CUtils::AssembleJson(string strReqData, string strAnsData, int iStart, int iLen)
 {
@@ -549,7 +577,6 @@ string CUtils::AssembleJson(string strReqData, string strAnsData, int iStart, in
 		}
 	}
 
-
 	if (!bAnsIsEmpty)
 	{
 		writer.String("AnsTime");
@@ -567,37 +594,32 @@ string CUtils::AssembleJson(string strReqData, string strAnsData, int iStart, in
 			}
 		}
 
-		// ans 传则出错 
-		writer.String("AnsTime");
-		writer.String("");
-		writer.String("AnsRet1");
-		writer.String("");
-		writer.String("AnsRet2");
-		writer.String("");
-
-		/*
+		// FIXME 发送的串有中文的话是有问题的
 		size_t uiFlag = strAnsRet1.substr(0).find(',');
 		size_t uiCode = strAnsRet1.substr(uiFlag + 1).find(',');
 
-		writer.String("AnsRet1_Flag");
+		writer.String("AnsRet1Flag");
 		writer.String(strAnsRet1.substr(0, 1).c_str());
-		writer.String("AnsRet1_RetCode");
+		writer.String("AnsRet1RetCode");
 		writer.String(strAnsRet1.substr(2, uiCode).c_str());
-		writer.String("AnsRet1_RetMsg");
+		writer.String("AnsRet1RetMsg");
 		writer.String(strAnsRet1.substr(uiCode + 1 + uiFlag + 1).c_str());
-
-		writer.String("AnsRet2");
-		// XXX 确保ans串中没有``字符串才能截取&_2往后的字符串
+		writer.String("AnsRet2Sec");
+		// 确保ans串中没有``字符串才能截取&_2往后的字符串
 		writer.String(GetMsgValue(strAnsData, "&_2", "``").c_str());
-		*/
+
 	}
 	else
 	{
 		writer.String("AnsTime");
 		writer.String("");
-		writer.String("AnsRet1");
+		writer.String("AnsRet1Flag");
 		writer.String("");
-		writer.String("AnsRet2");
+		writer.String("AnsRet1RetCode");
+		writer.String("");
+		writer.String("AnsRet1RetMsg");
+		writer.String("");
+		writer.String("AnsRet2Sec");
 		writer.String("");
 	}
 

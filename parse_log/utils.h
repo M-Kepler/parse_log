@@ -155,14 +155,30 @@ public:
 	 * @param[in]   &strResp			返回的数据
 	 * @return      string				返回的数据
 	 */
-	
-	// int WebServiceAgent(std::promise<string>&prom, string strJsonData, string &strResp);
 	string WebServiceAgent(string strJsonData, string &strResp);
-	// static int WebServiceAgent(string strJsonData, string &strResp);
 
 
-	// 访问异步操作的结果
+	/*
+	 * @brief       wstring转string
+	 * @param[in]   wstring			wstring的值
+	 * @return      string			转换后的值
+	 */
+	string WString2String(const std::wstring& ws);
+
+
+	/*
+	 * @brief       string转wstring
+	 * @param[in]   string			string值
+	 * @return      wstring			转换后的wstring
+	 */
+	wstring String2WString(const std::string& s);
+
+
+	/*
+	 * @brief       访问异步操作的结果
+	 */
 	void GetWebServiceRet(vector<future<string>>& vecfuResults);
+
 
 	/*
 	 * @brief       获取文件最后n行(兼容单行和行尾有空行的情况)
