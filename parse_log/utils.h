@@ -33,13 +33,12 @@ using namespace inifile;
 
 enum UtilsError
 {
-	UTILS_RTMSG_OK = 000000,
-	UTILS_OPEN_SUCCESS = 100000,
+	UTILS_RTMSG_OK = 000000,		// 一切正常
 	UTILS_GET_INI_ERROR = 100001,   // 获取配置文件值出错
-	UTILS_FILE_ERROR = 100001,
-	UTILS_DATE_EMPTY = 200001,       // 数据为空　　
-	UTILS_DOC_FAILED = 200002,       // 序列化失败
-	UTILS_WEBSERVICE_FAIL = 300001 // web service失败
+	UTILS_FILE_ERROR = 100001,		// 文件打开失败
+	UTILS_DATE_EMPTY = 200001,      // 数据为空　　
+	UTILS_DOC_FAILED = 200002,      // 序列化失败
+	UTILS_WEBSERVICE_FAIL = 300001  // WebService失败
 };
 
 

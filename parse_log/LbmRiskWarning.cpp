@@ -1,26 +1,18 @@
 #include "LbmRiskWarning.h"
 
-char* loadedFile[2]; // 存放指向 char* 类型的指针的数组
-typedef unordered_multimap<string, string> LogMap;
-typedef unordered_multimap<string, string>::iterator LogMapKeySet;
-LogMap *pLogMaps;
 
-LogMap allLogMap;
-LogMap *ThreadMap;
+CLbmRiskWarning::CLbmRiskWarning() :m_clThreadPool(m_iThreadPoolCount)
+{
+	// TODO 获取一些初始化需要的参数
+}
 
-CUtils clUtils;
-UtilsError utilsError;
 
-vector<string> vecThreadLines, vecEndThreadLines;
+CLbmRiskWarning::~CLbmRiskWarning()
+{
+}
 
-// XXX
-// ThreadPool pool(iSendThreadCount);
-// 配置获取
 
-ThreadPool pool(8);
-std::vector< std::future<string> > WebServiceRet;
-
-int multi_thread()
+UtilsError CLbmRiskWarning::multi_thread(ifstream &file)
 {
 	int iLineLen;
 	int iThreadCount;
@@ -42,18 +34,18 @@ int multi_thread()
 	streamsize llMaxSize;
 
 	// 获取配置
-	if ((utilsError = clUtils.GetConfigValue(strLoadSize, "LoadSize")) != UTILS_RTMSG_OK
-		|| (utilsError = clUtils.GetConfigValue(strThreadCount, "ThreadCount")) != UTILS_RTMSG_OK
-		|| (utilsError = clUtils.GetConfigValue(strSendThreadCount, "SendThreadCount")) != UTILS_RTMSG_OK
-		|| (utilsError = clUtils.GetConfigValue(strLineBuffer, "LineBuffer")) != UTILS_RTMSG_OK
-		|| (utilsError = clUtils.GetConfigValue(strAnsNum, "AnsNum")) != UTILS_RTMSG_OK
-		|| (utilsError = clUtils.GetConfigValue(strScanTime, "ScanTime")) != UTILS_RTMSG_OK
-		|| (utilsError = clUtils.GetConfigValue(strIncreRead, "IncreRead")) != UTILS_RTMSG_OK
+	if ((m_utilsError = m_clUtils.GetConfigValue(strLoadSize, "LoadSize")) != UTILS_RTMSG_OK
+		|| (m_utilsError = m_clUtils.GetConfigValue(strThreadCount, "ThreadCount")) != UTILS_RTMSG_OK
+		|| (m_utilsError = m_clUtils.GetConfigValue(strSendThreadCount, "SendThreadCount")) != UTILS_RTMSG_OK
+		|| (m_utilsError = m_clUtils.GetConfigValue(strLineBuffer, "LineBuffer")) != UTILS_RTMSG_OK
+		|| (m_utilsError = m_clUtils.GetConfigValue(strAnsNum, "AnsNum")) != UTILS_RTMSG_OK
+		|| (m_utilsError = m_clUtils.GetConfigValue(strScanTime, "ScanTime")) != UTILS_RTMSG_OK
+		|| (m_utilsError = m_clUtils.GetConfigValue(strIncreRead, "IncreRead")) != UTILS_RTMSG_OK
 		)
 	{
-		LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
+		LOG(ERROR) << "获取配置失败, 错误码: " << m_utilsError << endl;
 		// TODO 异常抛出
-		abort();
+		return m_utilsError;
 	}
 	iThreadCount = stoi(strThreadCount);
 	llLoadSize = stoll(strLoadSize);
@@ -63,162 +55,113 @@ int multi_thread()
 	iSendThreadCount = stoi(strSendThreadCount);
 
 	ios::sync_with_stdio(false);
-	pLogMaps = new LogMap[iThreadCount];
+	m_pLogMaps = new LogMap[iThreadCount];
 
 	// 双缓冲
 	llMaxSize = llLoadSize + iLineBuffer;
 
-	loadedFile[0] = new char[llMaxSize];
-	loadedFile[1] = new char[llMaxSize];
+	m_pLoadedFile[0] = new char[llMaxSize];
+	m_pLoadedFile[1] = new char[llMaxSize];
 
 
 	// 读取文件
-	ifstream file;
-	utilsError = clUtils.LoadFile(file);
-	if (UTILS_RTMSG_OK != utilsError)
-	{
-		return utilsError;
-	}
-	else
-	{
+	// ifstream file;
 		/* 确认文件大小 bytes */
-		streamoff llStart = 0;
-		streamoff llFileSize; // 文件大小
-		streamoff llCurrFileSize; // 文件大小
-		file.seekg(0, ios::end); // 文件指针指到文件末尾
-		streamoff llFileLen = file.tellg();
-		streampos pCurrPos = file.tellg(); // 上一次文件指针
-		streamoff llThreadIndex, llThreadPart;
-		streampos llLastLinePos; // 最后一行行首的位置
-		streampos llEndFilePos; // 文件末尾位置
-		streamsize llRealSize; // 实际读入大小(因为可能遇到需要的单词被截位)
+	streamoff llStart = 0;
+	streamoff llFileSize; // 文件大小
+	streamoff llCurrFileSize; // 文件大小
+	file.seekg(0, ios::end); // 文件指针指到文件末尾
+	streamoff llFileLen = file.tellg();
+	streampos pCurrPos = file.tellg(); // 上一次文件指针
+	streamoff llThreadIndex, llThreadPart;
+	streampos llLastLinePos; // 最后一行行首的位置
+	streampos llEndFilePos; // 文件末尾位置
+	streamsize llRealSize; // 实际读入大小(因为可能遇到需要的单词被截位)
 
-		bool bBufferIndex = 0; // 缓存下标
-		bool bNeedWait = false;
-		thread *threads = new thread[iThreadCount];
+	bool bBufferIndex = 0; // 缓存下标
+	bool bNeedWait = false;
 
-		// 获取大小
-		/* 兼容带 bom 的 utf8 编码格式 */
-		if (llFileLen > 3)
+	// thread *threads = new thread[iThreadCount];
+
+	// 获取大小
+	/* 兼容带 bom 的 utf8 编码格式 */
+	if (llFileLen > 3)
+	{
+		char bom[3];
+		file.seekg(0);
+		file.read(bom, 3);
+		if (bom[0] == -17 && bom[1] == -69 && bom[2] == -65)
 		{
-			char bom[3];
-			file.seekg(0);
-			file.read(bom, 3);
-			if (bom[0] == -17 && bom[1] == -69 && bom[2] == -65)
-			{
-				llStart = 3;
-				llFileSize = llFileLen - 3;
-			}
-			else
-			{
-				llFileSize = llFileLen;
-			}
+			llStart = 3;
+			llFileSize = llFileLen - 3;
 		}
 		else
 		{
 			llFileSize = llFileLen;
 		}
+	}
+	else
+	{
+		llFileSize = llFileLen;
+	}
 
-		LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
-		LOG(INFO) << "总文件大小: " << llFileSize << endl;
+	LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
+	LOG(INFO) << "总文件大小: " << llFileSize << endl;
 
-		// 原有的日志不需要分析
-		if (strIncreRead == "Yes")
+	// 原有的日志不需要分析
+	if (strIncreRead == "Yes")
+	{
+		char* strReq = (char*)"Req:";
+
+		vector<string> vecTailLine;
+		m_utilsError = m_clUtils.TailLine(file, 1, vecTailLine);
+		if (m_utilsError != UTILS_RTMSG_OK)
 		{
-			char* strReq = (char*)"Req:";
-
-			vector<string> vecTailLine;
-			utilsError = clUtils.TailLine(file, 1, vecTailLine);
-			if (utilsError != UTILS_RTMSG_OK)
-			{
-				abort();
-			}
-			strLastLine = vecTailLine[0];
-			iLineLen = strLastLine.length();
-			if (strstr(strLastLine.c_str(), strReq) != NULL)
-			{
-				file.clear();
-				file.seekg(-(iLineLen), ios::end);
-				llLastLinePos = file.tellg();
-			}
-			else
-			{
-				file.clear();
-				file.seekg(0, ios::end);
-				llLastLinePos = file.tellg();
-
-				chrono::milliseconds TimeOut(iScanTime);
-				this_thread::sleep_for(TimeOut);
-			}
+			abort();
 		}
+		strLastLine = vecTailLine[0];
+		iLineLen = strLastLine.length();
+		if (strstr(strLastLine.c_str(), strReq) != NULL)
+		{
+			file.clear();
+			file.seekg(-(iLineLen), ios::end);
+			llLastLinePos = file.tellg();
+		}
+		else
+		{
+			file.clear();
+			file.seekg(0, ios::end);
+			llLastLinePos = file.tellg();
 
-		file.clear();
-		file.seekg(0, ios::end);
-		llEndFilePos = file.tellg();
-		llFileSize = llEndFilePos - llLastLinePos;
-		llStart = llLastLinePos; // 开始读入位置回退到最末尾一行的行首
-
-		LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
-		LOG(INFO) << "最后一行为: " << strLastLine << endl;
-		LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
-
-		LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
-		LOG(INFO) << "需分析文件大小: " << llFileSize << "\t分析开始位置: " << llStart << "\t分析结束位置: " << llEndFilePos << endl;
-
-		ParseLog(file, llFileSize, pCurrPos, strLoadSize, llMaxSize, llStart, iThreadCount, iAnsNum, iScanTime);
-
-		// 清理
-		delete loadedFile[0];
-		delete loadedFile[1];
-		file.close();
-
-	}
-	return 0;
-}
-
-
-streamsize inline getRealSize(ifstream *file, streamoff llStart, streamsize llSize)
-{
-	char chCurr[1] = { 0 };
-	file->clear();
-	file->seekg(llStart + llSize);
-
-	while (file->get()!= '\n')
-	{
-		llSize++;
+			chrono::milliseconds TimeOut(iScanTime);
+			this_thread::sleep_for(TimeOut);
+		}
 	}
 
-	return llSize;
+	file.clear();
+	file.seekg(0, ios::end);
+	llEndFilePos = file.tellg();
+	llFileSize = llEndFilePos - llLastLinePos;
+	llStart = llLastLinePos; // 开始读入位置回退到最末尾一行的行首
+
+	LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
+	LOG(INFO) << "最后一行为: " << strLastLine << endl;
+	LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
+
+	LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
+	LOG(INFO) << "需分析文件大小: " << llFileSize << "\t分析开始位置: " << llStart << "\t分析结束位置: " << llEndFilePos << endl;
+
+	ParseLog(file, llFileSize, pCurrPos, strLoadSize, llMaxSize, llStart, iThreadCount, iAnsNum, iScanTime);
+
+	// 清理
+	delete m_pLoadedFile[0];
+	delete m_pLoadedFile[1];
+	file.close();
+	return UTILS_RTMSG_OK;
 }
 
 
-streamsize inline getBlockSize(int iStep, streamoff llStart, streamsize llSize)
-{
-	char *p = loadedFile[iStep] + llStart + llSize;
-	// while (*p != '\n')// 不用\n是因为没有\n时会无限循环, 比如静态文件只有一行数据, 所以加上\0一起做判断
-
-	while (*p != '\n' && *p != '\0')
-	{
-		++llSize;
-		++p;
-	}
-	// tset begin
-	llSize += 1; // 跳过最后的\n字符
-	// test end
-	return llSize;
-}
-
-
-void inline readLoad(int iStep, ifstream *file, streamoff llStart, streamsize llSize)
-{
-	// file->clear();
-	file->seekg(llStart);
-	// file->seekg(llStart);
-	file->read(loadedFile[iStep], llSize);
-}
-
-
-vector<string> ReadLineToVec(int iStep, streamoff llStart, streamsize llSize)
+vector<string> CLbmRiskWarning::ReadLineToVec(int iStep, streamoff llStart, streamsize llSize)
 {
 	char *pFileBuffer = NULL;
 	char *pLineBuffer = NULL;
@@ -227,7 +170,7 @@ vector<string> ReadLineToVec(int iStep, streamoff llStart, streamsize llSize)
 	string sLine;
 	vector<string> vecStringLine;
 
-	pFileBuffer = loadedFile[iStep];
+	pFileBuffer = m_pLoadedFile[iStep];
 
 	sFileBuffer = pFileBuffer;
 	sLineBuffer = sFileBuffer.substr(llStart, llSize);
@@ -256,17 +199,17 @@ vector<string> ReadLineToVec(int iStep, streamoff llStart, streamsize llSize)
 }
 
 
-void ParseMsgLine(vector<string> vecStr, int id, string strKey)
+void CLbmRiskWarning::ParseMsgLine(vector<string> vecStr, int id, string strKey)
 {
 	string MsgId;
-	LogMap *map = pLogMaps + id;
+	LogMap *map = m_pLogMaps + id;
 
 	auto end = map->end();
 	if (!vecStr.empty())
 	{
 		for (string::size_type i = 0; i < vecStr.size(); ++i)
 		{
-			MsgId = clUtils.GetMsgValue(vecStr[i], strKey);
+			MsgId = m_clUtils.GetMsgValue(vecStr[i], strKey);
 			if (MsgId.empty())
 			{
 				// XXX
@@ -281,7 +224,7 @@ void ParseMsgLine(vector<string> vecStr, int id, string strKey)
 }
 
 
-void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
+void CLbmRiskWarning::TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 {
 	int iLbmTimeOut;
 	int iSoapRetCode;
@@ -296,27 +239,27 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 
 	// 抽离
 	// 获取配置
-	if ((utilsError = clUtils.GetConfigValue(strModule, "Module")) != UTILS_RTMSG_OK)
+	if ((m_utilsError = m_clUtils.GetConfigValue(strModule, "Module")) != UTILS_RTMSG_OK)
 	{
-		LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
+		LOG(ERROR) << "获取配置失败, 错误码: " << m_utilsError << endl;
 		// TODO 异常抛出
 		abort();
 	}
 
 	LOG(INFO) << endl;
 	LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
-	LOG(INFO) << "allLogMap.size(): " << allLogMap.size() << endl;
+	LOG(INFO) << "allLogMap.size(): " << m_allLogMap.size() << endl;
 	for (; begin != end; )
 	{
 		if (mymap.count(begin->first) < iAnsNum)
 		{
-			time_t CurrTimeMs = clUtils.GetCurrentTimeMs();
-			time_t MsgTimeMs = clUtils.StringToMs(begin->second);
-			
+			time_t CurrTimeMs = m_clUtils.GetCurrentTimeMs();
+			time_t MsgTimeMs = m_clUtils.StringToMs(begin->second);
+
 			// 获取配置
-			if ((utilsError = clUtils.GetConfigValue(strLbmTimeOut, "LbmTimeOut")) != UTILS_RTMSG_OK )
+			if ((m_utilsError = m_clUtils.GetConfigValue(strLbmTimeOut, "LbmTimeOut")) != UTILS_RTMSG_OK)
 			{
-				LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
+				LOG(ERROR) << "获取配置失败, 错误码: " << m_utilsError << endl;
 				abort();
 			}
 			iLbmTimeOut = stoll(strLbmTimeOut);
@@ -324,10 +267,10 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 			if (((CurrTimeMs - MsgTimeMs) > iLbmTimeOut) && (strstr((begin->second).c_str(), "Req") != NULL))
 			{
 				// req串和ans串在两个内存块; 且req串已超时,则删除
-				LOG(INFO) <<  "扫描时间(ms): " << CurrTimeMs << "\tReq串时间(ms): " << MsgTimeMs << "\t时间差: " << CurrTimeMs - MsgTimeMs;
+				LOG(INFO) << "扫描时间(ms): " << CurrTimeMs << "\tReq串时间(ms): " << MsgTimeMs << "\t时间差: " << CurrTimeMs - MsgTimeMs;
 				LOG(INFO) << endl;
 
-				strPostData = clUtils.AssembleJson(begin->second);
+				strPostData = m_clUtils.AssembleJson(begin->second);
 
 				// begin++;
 				begin = mymap.erase(begin);
@@ -349,7 +292,7 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 		{
 			if ((strstr((begin->second).c_str(), "Ans") != NULL))
 			{
-				strRetCode = clUtils.GetMsgValue(begin->second, "&_1");
+				strRetCode = m_clUtils.GetMsgValue(begin->second, "&_1");
 
 				// 没超时, 但ans报错
 				if (((strModule == "KBSS") && (strRetCode != "0"))
@@ -365,7 +308,7 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 							break;
 						}
 					}
-					strPostData = clUtils.AssembleJson(iterReqData->second, begin->second);
+					strPostData = m_clUtils.AssembleJson(iterReqData->second, begin->second);
 				}
 			}
 
@@ -380,13 +323,14 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 		{
 			// 发送并删除
 			// Post
-			/* 
+			/*
 			char* pMsgData = (char*)strPostData.c_str();
 			utilsError = clUtils.DoPost(pMsgData, strResponse);
 			*/
 
 			// WebService
-			WebServiceRet.emplace_back(pool.enqueue(&CUtils::WebServiceAgent, clUtils, strPostData, strResponse));
+			// WebServiceRet.emplace_back(pool.enqueue(&CUtils::WebServiceAgent, m_clUtils, strPostData, strResponse));
+			m_vecWebServiceRet.emplace_back(m_clThreadPool.enqueue(&CUtils::WebServiceAgent, m_clUtils, strPostData, strResponse));
 
 			strPostData = "";
 		}
@@ -396,7 +340,7 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 }
 
 
-void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string strLoadSize, streamsize llMaxSize, streamoff llStart, int iThreadCount, int iAnsNum, int iScanTime)
+void CLbmRiskWarning::ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string strLoadSize, streamsize llMaxSize, streamoff llStart, int iThreadCount, int iAnsNum, int iScanTime)
 {
 
 	clock_t t_start, t_end; // debug
@@ -414,7 +358,9 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 	streampos pNewPos;
 	thread *threads = new thread[iThreadCount];
 
-	if ((utilsError = clUtils.GetConfigValue(strMsgKey, "MsgKey")) != UTILS_RTMSG_OK)
+	CLbmRiskWarning clLbmRiskWarning;
+
+	if ((m_utilsError = m_clUtils.GetConfigValue(strMsgKey, "MsgKey")) != UTILS_RTMSG_OK)
 	{
 		LOG(ERROR) << "获取配置MsgKey失败" << endl;
 		abort();
@@ -468,19 +414,19 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 			// 把该数据块的行全插到一个map中
 			for (int i = 0; i < iThreadCount; ++i)
 			{
-				LogMapKeySet p = (pLogMaps + i)->begin();
-				LogMapKeySet end = (pLogMaps + i)->end();
+				LogMapKeySet p = (m_pLogMaps + i)->begin();
+				LogMapKeySet end = (m_pLogMaps + i)->end();
 				for (; p != end; ++p)
 				{
-					allLogMap.insert(pair<string, string>(p->first, p->second));
+					m_allLogMap.insert(pair<string, string>(p->first, p->second));
 				}
 				// 清理掉线程的子map
-				LogMap *ThreadMap = pLogMaps + i;
+				LogMap *ThreadMap = m_pLogMaps + i;
 				ThreadMap->clear();
 			}
 
 			// 扫描map的时间很短的, 但是发送的时间很长, 必须做成异步的
-			TimeoutScan(allLogMap, iAnsNum);
+			TimeoutScan(m_allLogMap, iAnsNum);
 			// 不关心异步操作的返回值
 			/*
 			thread WatchRetJob(&CUtils::GetWebServiceRet, clUtils, std::ref(WebServiceRet));
@@ -510,7 +456,9 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 				LOG(INFO) << "线程 " << i << " 开始读入位置llThreadIndex: " << llThreadIndex << "\t实际线程 " << i << " 读入大小llFileLen:" << llFileLen << endl;
 				vecThreadLines = ReadLineToVec(bBufferIndex, llThreadIndex, llFileLen);
 				LOG(INFO) << "线程 " << i << " 共读入: " << vecThreadLines.size() << "行" << endl;
-				threads[i] = thread(ParseMsgLine, vecThreadLines, i, strMsgKey);
+
+				threads[i] = thread(&CLbmRiskWarning::ParseMsgLine, this, vecThreadLines, i, strMsgKey);
+
 				llThreadIndex += llFileLen;
 			}
 			else
@@ -526,7 +474,7 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 		if ((llRealSize - llThreadIndex) > 70)
 		{
 			vecEndThreadLines = ReadLineToVec(bBufferIndex, llThreadIndex, llRealSize - llThreadIndex);
-			threads[0] = thread(ParseMsgLine, vecEndThreadLines, 0, strMsgKey);
+			threads[0] = thread(&CLbmRiskWarning::ParseMsgLine, this, vecEndThreadLines, 0, strMsgKey);
 			LOG(INFO) << "线程 4 " << "共读入: " << vecEndThreadLines.size() << "行" << endl;
 		}
 
@@ -556,7 +504,7 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 
 			// 持续监控文件增长
 			// XXX 时间流逝到明天呢? 而且明天的日志还没有创建呢?
-			do 
+			do
 			{
 				std::chrono::milliseconds TimeOut(iScanTime);
 				// Sleep(iScanTime*SLEEP_MULTIPLE);
@@ -565,7 +513,7 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 				file.seekg(0, ios::end); // 文件指针指到文件末尾
 				pNewPos = file.tellg(); // 新的文件指针
 				llFileSize = pNewPos - pCurrPos;
-				if (clUtils.bIsNextDay())
+				if (m_clUtils.bIsNextDay())
 				{
 					// 时间已经跨越到新一天,运行结束; 关闭文件并找新一天的文件
 					break;

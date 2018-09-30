@@ -37,6 +37,10 @@ UtilsError CUtils::LoadFile(ifstream &file)
 		// TODO 异常抛出
 		abort();
 	}
+
+	if (bIsNextDay())
+	{
+	}
 	strFileName = strRunLogPath + "/" + m_stCurrSysTime.pDate + "/" + filename;
 
 	file.open(strFileName.c_str(), ios::binary | ios::in);
@@ -176,6 +180,12 @@ void CUtils::SysNowTime(const char* pDataFormat, const char* pTimeFormat)
 	time_t timep;
 	time(&timep);
 	struct timeb tb;
+	/*
+	string test = "20180929";
+	char Date[16];
+	test.copy(m_stCurrSysTime.pDate, 8, 0);
+	*(m_stCurrSysTime.pDate + 8) = '\0';
+	*/
 
 	strftime(m_stCurrSysTime.pDate, sizeof(m_stCurrSysTime.pDate), pDataFormat, localtime(&timep));
 	strftime(m_stCurrSysTime.pTime, sizeof(m_stCurrSysTime.pTime), pTimeFormat, localtime(&timep));
@@ -536,10 +546,11 @@ bool CUtils::bIsNextDay()
 	const char* pDataFormat = "%Y%m%d";
 
 	strftime(stCurrSysTime.pDate, sizeof(m_stCurrSysTime.pDate), pDataFormat, localtime(&timep));
-	cout << stCurrSysTime.pDate << "\t" << m_stCurrSysTime.pDate << endl;
 
-	if (stCurrSysTime.pDate != m_stCurrSysTime.pDate)
+	// 新的一天
+	if (strcmp(stCurrSysTime.pDate, m_stCurrSysTime.pDate) != 0)
 	{
+		memcpy(m_stCurrSysTime.pDate, stCurrSysTime.pDate, sizeof(stCurrSysTime.pDate));
 		return true;
 	}
 	else

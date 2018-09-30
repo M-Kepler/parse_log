@@ -135,11 +135,9 @@ void prrr(vector<future<int>>& results)
 	}
 }
 
-
-int main(int argv, char* argc[])
+int test(int argv, char* argc[])
 {
 	CGlog *p_glog = CGlog::GetInstance();
-	multi_thread();
 
 	bool step = 0;
 	streamsize loadsize = 250000;
@@ -155,12 +153,37 @@ int main(int argv, char* argc[])
 
 	// 读取文件
 	CUtils clUtils;
+	CLbmRiskWarning clLbmRiskWarning;
+
 	ifstream file;
 
 	streamoff start = 0;
 	streamsize size;
 	int iLen;
 
+
+	while (1)
+	{
+
+		if (UTILS_RTMSG_OK != clUtils.LoadFile(file))
+		{
+			continue;
+		}
+		else
+		{
+			LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
+			LOG(INFO) << "==============-------------------------【" << clUtils.m_stCurrSysTime.pDate << "】的日志文件开始处理 -------------------------==============" << endl;
+			LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
+			if (UTILS_RTMSG_OK == clLbmRiskWarning.multi_thread(file))
+			{
+				LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
+				LOG(INFO) << "==============-------------------------【" << clUtils.m_stCurrSysTime.pDate << "】的日志文件处理完毕 -------------------------==============" << endl;
+				LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
+				// 当天的处理完了, 要开始处理第二天的文件了
+				continue;
+			}
+		}
+	}
 
 
 	// AssembleJson、WebServiceAgent
@@ -561,3 +584,38 @@ int main(int argv, char* argc[])
 	return 0;
 }
 
+
+int main(int argv, char* argc[])
+{
+
+	ifstream file;
+	CUtils clUtils;
+	CLbmRiskWarning clLbmRiskWarning;
+	CGlog *p_glog = CGlog::GetInstance();
+
+	while (1)
+	{
+
+		if (UTILS_RTMSG_OK != clUtils.LoadFile(file))
+		{
+			continue;
+		}
+		else
+		{
+			LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
+			LOG(INFO) << "==============-------------------------【" << clUtils.m_stCurrSysTime.pDate << "】的日志文件开始处理 -------------------------==============" << endl;
+			LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
+			if (UTILS_RTMSG_OK == clLbmRiskWarning.multi_thread(file))
+			{
+				LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
+				LOG(INFO) << "==============-------------------------【" << clUtils.m_stCurrSysTime.pDate << "】的日志文件处理完毕 -------------------------==============" << endl;
+				LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
+				// 当天的处理完了, 要开始处理第二天的文件了
+				continue;
+			}
+		}
+	}
+
+	system("pause");
+	return 0;
+}
