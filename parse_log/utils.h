@@ -72,7 +72,7 @@ public:
 
 
 	/*
-	 * @brief	从行中查找key("="号左边)对应的value("="号右边)值
+	 * @brief	从行中查找key("="号左边)对应的value("="号右边)值; 非限定'='符,也可以是":"
 	 * @param	strOrig			待分割的字符串
 	 * @param	strKey			待查找的key
 	 * @param	strSplit		截取符(从key开始出现的第一个strSplit)
@@ -94,6 +94,13 @@ public:
 	time_t StringToMs(string strOrig, int iStart = 0, int iLen = 15);
 	// create_lbm.out测试数据
 	// time_t StringToMs(string strOrig, int iStart = 39, int iLen = 54);
+
+
+	/*
+	 * @brief       判断是否跨越到明天了
+	 * @return      bool		跨越到第二天返回true, 还是当天返回false
+	 */
+	bool bIsNextDay();
 
 
 	/*
@@ -132,13 +139,14 @@ public:
 
 
 	/*
-	 * @brief       获取当前系统日期时间
+	 * @brief			获取当前系统日期时间
 	 * @param[in]		pDataFormat				日期的格式
 	 * @param[in]		pTimeFormat				时间格式
-	 * @return      该函数在初始化类对象时, 即初始化类成员m_stCurrSysTime
+	 * @return			该函数在初始化类对象时, 即初始化类成员m_stCurrSysTime
 	 */
 	// 初衷是为了能到当天文件夹下去找runlog的
 	void SysNowTime(const char* pDataFormat = "%Y%m%d", const char* pTimeFormat = "%H%M%S");
+
 
 	/*
 	 * @brief	发Http Post请求
@@ -220,16 +228,12 @@ private:
 	string m_strErrorStr;
 
 	/* soap */
-	string m_strWebServiceUrl;
-	string m_strServiceName;
-
 	char m_szIsProxy[8 + 1];
 	char m_szProxyType[8 + 1];
 	char m_szProxyHost[32 + 1];	/* Proxy Server host name */
 	int m_iProxyPort;		/* Proxy Server port (default = 8080) */
 	char m_szProxyUserid[32 + 1];	/* Proxy Authorization user name */
 	char m_szProxyPasswd[32 + 1];	/* Proxy Authorization password */
-
 };
 
 

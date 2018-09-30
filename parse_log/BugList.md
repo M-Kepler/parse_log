@@ -180,6 +180,8 @@ MsgId=0D2C8E8E16BF4E7EADA4684D7FA29E9A,20180908-201040-624,Ans:144624
 
  ### 文件产生速度太快时, 如没2毫秒插入一行req一行ans时, 会掉进getRealSize函数的死循环中
 
+ > 不是这个原因
+
 * 【日期】：20180909-23:48
 * 【问题】：
 ```
@@ -189,6 +191,7 @@ MsgId=0D2C8E8E16BF4E7EADA4684D7FA29E9A,20180908-201040-624,Ans:144624
 	3. while ((file->peek() != EOF) && ((file->get()!= '\n') || (file->get()!= '\0')))
 ```
 * 【修复】：添加EOF判断
+
 
 
  ### 调整指针指向末尾的时候, 会不会可能出现指针的位置刚好处在一行的中间
@@ -203,15 +206,59 @@ MsgId=0D2C8E8E16BF4E7EADA4684D7FA29E9A,20180908-201040-624,Ans:144624
 
 
 ### c++11 往多线程函数传递引用参数时会报错:rror C2672: “std::invoke”: 未找到匹配的重载函数
+
 https://blog.csdn.net/pengh56/article/details/78244509
 引用参数的入参为 str::ref(refData)
 
 
 
-### gsoap发送的数据包含中文时, webservice无法接收的问题
+### gsoap
+
+1. 发送的数据包含中文时, webservice无法接收的问题
 
 ```
 	// SoapServiceSoapBindingProxy proxy(strWebServiceUrl.c_str(), SOAP_C_UTFSTRING);
 	改为:
 	SoapServiceSoapBindingProxy proxy(strWebServiceUrl.c_str(), SOAP_C_MBSTRING);
+```
+
+2. webservice采用上诉方式后, 接收到的数据仍存在中文乱码的情况
+
+
+### TimeOutScan时, 对错误数据要异步发webservice
+
+> 原本是for循环扫描map的时候, 发现不合格的数据会发送webservice, 发完后再进入下一层循环;
+> 这样肯定是不行的,如果A发送失败则会阻塞在哪里很久
+
+* 改造成异步的形式
+
+solution1: 这样也不行, 当进入下一个循环的时候会崩掉,除非给每个进到这里的循环都新开两条线程来异步处理发送过程
+		   最好是把要发送的放到一个队列里, 然后访问这个队列进行异步发送, 可是我怎么知道该消息对应的返回结果
+
+solution2: 框架、语言特性：thrift、c++11的future、promise进行异步
+```c++
+	/*
+	std::promise<string> prom;                           // 生成一个 std::promise 对象.
+	std::future<string> fut = prom.get_future();         // 和 future 关联.
+	// 多线程使用类成员函数
+	std::thread ThreadSend(&CUtils::WebServiceAgent, &clUtils, std::ref(prom), strPostData, std::ref(strResponse));            // 将 prom交给另外一个线程t1 注：std::ref,promise对象禁止拷贝构造，以引用方式传递
+	std::thread ThreadGetRet(&CUtils::GetWebServiceRet, &clUtils, std::ref(fut));        // 将 future 交给另外一个线程t.
+
+	if (ThreadSend.joinable() && ThreadGetRet.joinable())
+	{
+		ThreadSend.join();
+		ThreadGetRet.join();
+	}
+	*/
+```
+solution3: 线程池 ThreadPool.h https://blog.csdn.net/caoshangpa/article/details/80374651
+
+```c++
+	// × 之前要等发送完毕才进入下一个循环是因为线程池不是在这里创建的 
+	ThreadPool pool(4);
+	auto result = pool.enqueue(CUtils::WebServiceAgent, strPostData, strResponse);
+
+	// √ 线程池在外面创建
+	WebServiceRet.emplace_back(pool.enqueue(&CUtils::WebServiceAgent, clUtils, strPostData, strResponse));
+
 ```

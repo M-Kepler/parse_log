@@ -161,6 +161,8 @@ int main(int argv, char* argc[])
 	streamsize size;
 	int iLen;
 
+
+
 	// AssembleJson¡¢WebServiceAgent
 	/*
 	string strJson = clUtils.AssembleJson(str_req, str_ans, 0, 19);

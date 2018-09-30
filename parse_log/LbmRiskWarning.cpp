@@ -13,11 +13,12 @@ UtilsError utilsError;
 
 vector<string> vecThreadLines, vecEndThreadLines;
 
+// XXX
 // ThreadPool pool(iSendThreadCount);
+// 配置获取
+
 ThreadPool pool(8);
 std::vector< std::future<string> > WebServiceRet;
-
-int iCount = 0;
 
 int multi_thread()
 {
@@ -28,6 +29,8 @@ int multi_thread()
 	int iAnsNum;
 	int iScanTime;
 	string strLastLine;
+	// XXX 行防截断缓冲大小
+	// 要小心, 特殊的lbm的ans串很长的; 这里最好设为ans串可能的最长值
 	string strLineBuffer;
 	string strLoadSize;
 	string strThreadCount;
@@ -135,7 +138,6 @@ int multi_thread()
 			if (strstr(strLastLine.c_str(), strReq) != NULL)
 			{
 				file.clear();
-				// file.seekg(-(iLineLen + 1), ios::end); // XXX 这里+1是为了跳过换行符\n,但是当只有一行时, 行首是没有\n的
 				file.seekg(-(iLineLen), ios::end);
 				llLastLinePos = file.tellg();
 			}
@@ -145,7 +147,7 @@ int multi_thread()
 				file.seekg(0, ios::end);
 				llLastLinePos = file.tellg();
 
-				chrono::milliseconds TimeOut(100);
+				chrono::milliseconds TimeOut(iScanTime);
 				this_thread::sleep_for(TimeOut);
 			}
 		}
@@ -163,11 +165,6 @@ int multi_thread()
 		LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
 		LOG(INFO) << "需分析文件大小: " << llFileSize << "\t分析开始位置: " << llStart << "\t分析结束位置: " << llEndFilePos << endl;
 
-		/*
-		ThreadPool pool(iSendThreadCount);
-		std::vector< std::future<string> > WebServiceRet;
-		*/
-
 		ParseLog(file, llFileSize, pCurrPos, strLoadSize, llMaxSize, llStart, iThreadCount, iAnsNum, iScanTime);
 
 		// 清理
@@ -183,23 +180,9 @@ int multi_thread()
 streamsize inline getRealSize(ifstream *file, streamoff llStart, streamsize llSize)
 {
 	char chCurr[1] = { 0 };
-
 	file->clear();
-
 	file->seekg(llStart + llSize);
-	// while (file->get() != '\n')
-	// 文件增长太快的时候, 这里会掉进死循环
-	// FIXME creator.out 如每2、3毫秒插入两条数据的时候可重现
-	// while ((file->peek() != EOF) && ((file->get()!= '\n') || (file->get()!= '\0')))
-	/*
-	file->read(chCurr, 1);
-	while (chCurr[0] != '\n' || chCurr[0] != '\0')
-	{
-		file->read(chCurr, 1);
-		cout << chCurr[0];
-		llSize++;
-	}
-	*/
+
 	while (file->get()!= '\n')
 	{
 		llSize++;
@@ -251,7 +234,6 @@ vector<string> ReadLineToVec(int iStep, streamoff llStart, streamsize llSize)
 	pLineBuffer = (char*)sLineBuffer.c_str();
 	vecStringLine.clear();
 
-	// XXX 换行符
 	char *strDelim = (char*)"\n";
 	char *strToken = NULL;
 	char *nextToken = NULL;
@@ -396,39 +378,14 @@ void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum)
 
 		if (!strPostData.empty())
 		{
-			// libcurl 发送并删除
-			// char* pMsgData = (char*)strPostData.c_str();
-			// utilsError = clUtils.DoPost(pMsgData, strResponse);
-
-			// FIXME 需要改造成异步的, strPostData往发送队列里插,WebServiceAgent隔n时间扫描发送
-			// 这样也不行, 当进入下一个循环的时候会崩掉,除非给每个进到这里的循环都心开两条线程来异步处理发送过程
-			// 最好是把要发送的放到一个队列里, 然后访问这个队列进行异步发送, 可是我怎么知道该消息对应的返回结果呢
-			// 线程池 https://blog.csdn.net/caoshangpa/article/details/80374651
-			// thrift
-			// iSoapRetCode = clUtils.WebServiceAgent(strPostData, strResponse);
-
-			// 1.
-			/*
-			std::promise<string> prom;                           // 生成一个 std::promise 对象.
-			std::future<string> fut = prom.get_future();         // 和 future 关联.
-			// 多线程使用类成员函数
-			std::thread ThreadSend(&CUtils::WebServiceAgent, &clUtils, std::ref(prom), strPostData, std::ref(strResponse));            // 将 prom交给另外一个线程t1 注：std::ref,promise对象禁止拷贝构造，以引用方式传递
-			std::thread ThreadGetRet(&CUtils::GetWebServiceRet, &clUtils, std::ref(fut));        // 将 future 交给另外一个线程t.
-
-			if (ThreadSend.joinable() && ThreadGetRet.joinable())
-			{
-				ThreadSend.join();
-				ThreadGetRet.join();
-			}
+			// 发送并删除
+			// Post
+			/* 
+			char* pMsgData = (char*)strPostData.c_str();
+			utilsError = clUtils.DoPost(pMsgData, strResponse);
 			*/
 
-			// 2. 线程池,之所以之前要等发送完毕才进入下一个循环是因为线程池不是在这里创建的 
-			/*
-			ThreadPool pool(4);
-			auto result = pool.enqueue(CUtils::WebServiceAgent, strPostData, strResponse);
-			*/
-
-			// 3. 线程池
+			// WebService
 			WebServiceRet.emplace_back(pool.enqueue(&CUtils::WebServiceAgent, clUtils, strPostData, strResponse));
 
 			strPostData = "";
@@ -563,6 +520,7 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 		}
 
 		LOG(INFO) << "线程 4 开始读入位置 llThreadIndex: " << llThreadIndex << "\t实际线程 4 读入大小 llRealSize-llThreadIndex: " << llRealSize - llThreadIndex << endl;
+
 		// XXX
 		// 一行请求不可能少于70个字符吧
 		if ((llRealSize - llThreadIndex) > 70)
@@ -597,15 +555,21 @@ void ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string 
 			}
 
 			// 持续监控文件增长
+			// XXX 时间流逝到明天呢? 而且明天的日志还没有创建呢?
 			do 
 			{
-				std::chrono::milliseconds TimeOut(100);
+				std::chrono::milliseconds TimeOut(iScanTime);
 				// Sleep(iScanTime*SLEEP_MULTIPLE);
 				std::this_thread::sleep_for(TimeOut);
 				file.clear();
 				file.seekg(0, ios::end); // 文件指针指到文件末尾
 				pNewPos = file.tellg(); // 新的文件指针
 				llFileSize = pNewPos - pCurrPos;
+				if (clUtils.bIsNextDay())
+				{
+					// 时间已经跨越到新一天,运行结束; 关闭文件并找新一天的文件
+					break;
+				}
 			} while (llFileSize <= 0);
 
 			LOG(INFO) << endl;

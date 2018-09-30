@@ -1,11 +1,11 @@
 #include "utils.h"
 
-/*gsoap*/
+/* gsoap */
 #include "SoapServiceSoapBinding.nsmap"
 #include "soapSoapServiceSoapBindingProxy.h"
 
 
-// glog 单例
+/* glog单例 */
 // CGlog *p_glog = CGlog::GetInstance();
 
 
@@ -13,13 +13,6 @@ CUtils::CUtils()
 {
 	UtilsError utilsError;
 	SysNowTime();// 初始化时间
-	if ((utilsError = GetConfigValue(m_strWebServiceUrl, "WebServiceUrl", "CURL")) != UTILS_RTMSG_OK
-		|| (utilsError = GetConfigValue(m_strServiceName, "ServiceName", "CURL")) != UTILS_RTMSG_OK
-		)
-	{
-		LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
-		// TODO 异常抛出
-	}
 }
 
 
@@ -153,38 +146,6 @@ time_t CUtils::StringToMs(string strOrig, int iStart, int iEnd)
 }
 
 
-// linux 下不可用
-/*
-bool CUtils::bCheckDate(string strOrig, int iStart, int iEnd)
-{
-	char* formate;
-	string str;
-	int len = iEnd - iStart;
-	int nYear, nMonth, nDay, nHour, nMinute, nSecond;
-
-	formate = (char*)"%4d%2d%2d-%2d%2d%2d";
-	str = strOrig.substr(iStart, len);
-	sscanf_s(str.c_str(), formate, &nYear, &nMonth, &nDay, &nHour, &nMinute, &nSecond);
-
-	if (nYear < 1970 || nYear > 3000 || nMonth < 1 || nMonth> 12 || nDay < 1 || nDay  > 31
-		|| nHour < 0 || nHour > 23 || nMinute < 0 || nMinute>59 || nSecond < 0 || nSecond>59)
-	{
-		return false;
-	}
-	CTime t(nYear, nMonth, nDay, nHour, nMinute, nSecond);
-	// CTime会对非正常的日期进行进位处理, 如4月31会转换为5月1号,所以如果有发生转换则认为非正常日期
-
-	return (nYear == t.GetYear()
-		&& nMonth == t.GetMonth()
-		&& nDay == t.GetDay()
-		&& nHour == t.GetHour()
-		&& nMinute == t.GetMinute()
-		&& nSecond == t.GetSecond()
-		);
-}
-*/
-
-
 char * CUtils::GetConfigPath()
 {
 	return m_ConfigPath;
@@ -280,73 +241,6 @@ UtilsError CUtils::TailLine(ifstream &file, int iLineNum, vector<string>& vecRet
 	return UTILS_RTMSG_OK;
 }
 
-/*改用webservice了*/
-/*
-UtilsError CUtils::DoPost(char * pData, string &strResp)
-{
-	string name;
-	string value;
-	unsigned int uiPosKey;
-	UtilsError enumError;
-	CURLcode curlErrorCode;
-
-	char* pUrl;
-	int iPort;
-	int iTimeOut;
-	string strPort;
-	string strTimeOut;
-	string strHttpUrl; // url 地址
-	string strServiceName; // 服务名
-	string strFullUrl; // 完整 url
-	string strHttpHeader; // 请求头
-	string strHttpRepeatNum; // 超时重发次数
-	string strHttpTimeOut; // 超时时间
-	UtilsError utilsError;
-
-	if ((utilsError = GetConfigValue(strHttpUrl, "HttpUrl", "CURL")) != UTILS_RTMSG_OK
-		|| (utilsError = GetConfigValue(strServiceName, "ServiceName", "CURL")) != UTILS_RTMSG_OK
-		|| (utilsError = GetConfigValue(strPort, "HttpPort", "CURL")) != UTILS_RTMSG_OK
-		|| (utilsError = GetConfigValue(strTimeOut, "HttpTimeOut", "CURL")) != UTILS_RTMSG_OK
-		|| (utilsError = GetConfigValue(strHttpHeader, "HttpHeader", "CURL")) != UTILS_RTMSG_OK
-		|| (utilsError = GetConfigValue(strHttpRepeatNum, "HttpRepeatNum", "CURL")) != UTILS_RTMSG_OK
-		)
-	{
-		LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
-		// TODO 异常抛出
-		return utilsError;
-	}
-	else
-	{
-		strFullUrl = strHttpUrl + strServiceName;
-		pUrl = (char*)strFullUrl.c_str();
-		iPort = stoi(strPort);
-		iTimeOut = stoi(strTimeOut);
-
-		curl_easy_setopt(pUrl, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.86 Safari/537.36");
-		curl_easy_setopt(pUrl, CURLOPT_PORT, iPort);
-		curl_easy_setopt(pUrl, CURLOPT_CONNECTTIMEOUT, iTimeOut); // 连接等待时间
-
-		uiPosKey = strHttpHeader.find(":");
-		if (uiPosKey != string::npos)
-		{
-			name = strHttpHeader.substr(1, uiPosKey);
-			value = strHttpHeader.substr(uiPosKey + 1, strHttpHeader.length() - 1);
-			string strHeader(name);
-			strHeader.append(": ");
-			strHeader.append(value);
-			struct curl_slist* headers = NULL;
-			curl_slist_append(headers, strHeader.c_str());
-			curl_easy_setopt(pUrl, CURLOPT_HTTPHEADER, headers);
-		}
-	}
-	curl_easy_setopt(pUrl, CURLOPT_POST, 1);
-	curl_easy_setopt(pUrl, CURLOPT_POSTFIELDS, pData); // Post请求的数据
-	curl_easy_setopt(pUrl, CURLOPT_URL, pUrl);
-	strResp = curl_easy_perform(pUrl); // 开始执行
-	return UTILS_RTMSG_OK;
-}
-*/
-
 
 string CUtils::WString2String(const std::wstring& ws)
 {
@@ -376,7 +270,6 @@ wstring CUtils::String2WString(const std::string& s)
 	setlocale(LC_ALL, strLocale.c_str());
 	return wstrResult;
 }
-
 
 
 string CUtils::WebServiceAgent(string strJsonData, string &strResp)
@@ -427,7 +320,7 @@ string CUtils::WebServiceAgent(string strJsonData, string &strResp)
 	}
 	else
 	{
-		// FIXME 中文乱码
+		// FIXME 收到的回复有中文乱码
 		strResp = *(pstrResponse->return_);
 		LOG(INFO) << "==============-------------------------==============" << "webservice 调用成功! " << "==============-------------------------==============" << endl;
 		// LOG(INFO) << "==============-------------------------==============" << "webservice 返回的数据为: " << "==============-------------------------==============" << endl;
@@ -594,7 +487,6 @@ string CUtils::AssembleJson(string strReqData, string strAnsData, int iStart, in
 			}
 		}
 
-		// FIXME 发送的串有中文的话是有问题的
 		size_t uiFlag = strAnsRet1.substr(0).find(',');
 		size_t uiCode = strAnsRet1.substr(uiFlag + 1).find(',');
 
@@ -634,6 +526,61 @@ string CUtils::AssembleJson(string strReqData, string strAnsData, int iStart, in
 	return strJson;
 }
 
+
+bool CUtils::bIsNextDay()
+{
+	time_t timep;
+	time(&timep);
+	struct timeb tb;
+	CurrentSysTime stCurrSysTime;
+	const char* pDataFormat = "%Y%m%d";
+
+	strftime(stCurrSysTime.pDate, sizeof(m_stCurrSysTime.pDate), pDataFormat, localtime(&timep));
+	cout << stCurrSysTime.pDate << "\t" << m_stCurrSysTime.pDate << endl;
+
+	if (stCurrSysTime.pDate != m_stCurrSysTime.pDate)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+
+// linux 下不可用
+/*
+bool CUtils::bCheckDate(string strOrig, int iStart, int iEnd)
+{
+	char* formate;
+	string str;
+	int len = iEnd - iStart;
+	int nYear, nMonth, nDay, nHour, nMinute, nSecond;
+
+	formate = (char*)"%4d%2d%2d-%2d%2d%2d";
+	str = strOrig.substr(iStart, len);
+	sscanf_s(str.c_str(), formate, &nYear, &nMonth, &nDay, &nHour, &nMinute, &nSecond);
+
+	if (nYear < 1970 || nYear > 3000 || nMonth < 1 || nMonth> 12 || nDay < 1 || nDay  > 31
+		|| nHour < 0 || nHour > 23 || nMinute < 0 || nMinute>59 || nSecond < 0 || nSecond>59)
+	{
+		return false;
+	}
+	CTime t(nYear, nMonth, nDay, nHour, nMinute, nSecond);
+	// CTime会对非正常的日期进行进位处理, 如4月31会转换为5月1号,所以如果有发生转换则认为非正常日期
+
+	return (nYear == t.GetYear()
+		&& nMonth == t.GetMonth()
+		&& nDay == t.GetDay()
+		&& nHour == t.GetHour()
+		&& nMinute == t.GetMinute()
+		&& nSecond == t.GetSecond()
+		);
+}
+*/
+
+
 // linux下不可用
 /*
 UtilsError CUtils::DoPost(char * pData, string &strResp)
@@ -664,7 +611,6 @@ UtilsError CUtils::DoPost(char * pData, string &strResp)
 		)
 	{
 		LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
-		// TODO 异常抛出
 		return utilsError;
 	}
 	else
@@ -698,3 +644,72 @@ UtilsError CUtils::DoPost(char * pData, string &strResp)
 	}
 }
 */
+
+
+/* DoPost弃用, 改用webservice了*/
+/*
+UtilsError CUtils::DoPost(char * pData, string &strResp)
+{
+	string name;
+	string value;
+	unsigned int uiPosKey;
+	UtilsError enumError;
+	CURLcode curlErrorCode;
+
+	char* pUrl;
+	int iPort;
+	int iTimeOut;
+	string strPort;
+	string strTimeOut;
+	string strHttpUrl; // url 地址
+	string strServiceName; // 服务名
+	string strFullUrl; // 完整 url
+	string strHttpHeader; // 请求头
+	string strHttpRepeatNum; // 超时重发次数
+	string strHttpTimeOut; // 超时时间
+	UtilsError utilsError;
+
+	if ((utilsError = GetConfigValue(strHttpUrl, "HttpUrl", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = GetConfigValue(strServiceName, "ServiceName", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = GetConfigValue(strPort, "HttpPort", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = GetConfigValue(strTimeOut, "HttpTimeOut", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = GetConfigValue(strHttpHeader, "HttpHeader", "CURL")) != UTILS_RTMSG_OK
+		|| (utilsError = GetConfigValue(strHttpRepeatNum, "HttpRepeatNum", "CURL")) != UTILS_RTMSG_OK
+		)
+	{
+		LOG(ERROR) << "获取配置失败, 错误码: " << utilsError << endl;
+		return utilsError;
+	}
+	else
+	{
+		strFullUrl = strHttpUrl + strServiceName;
+		pUrl = (char*)strFullUrl.c_str();
+		iPort = stoi(strPort);
+		iTimeOut = stoi(strTimeOut);
+
+		curl_easy_setopt(pUrl, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.86 Safari/537.36");
+		curl_easy_setopt(pUrl, CURLOPT_PORT, iPort);
+		curl_easy_setopt(pUrl, CURLOPT_CONNECTTIMEOUT, iTimeOut); // 连接等待时间
+
+		uiPosKey = strHttpHeader.find(":");
+		if (uiPosKey != string::npos)
+		{
+			name = strHttpHeader.substr(1, uiPosKey);
+			value = strHttpHeader.substr(uiPosKey + 1, strHttpHeader.length() - 1);
+			string strHeader(name);
+			strHeader.append(": ");
+			strHeader.append(value);
+			struct curl_slist* headers = NULL;
+			curl_slist_append(headers, strHeader.c_str());
+			curl_easy_setopt(pUrl, CURLOPT_HTTPHEADER, headers);
+		}
+	}
+	curl_easy_setopt(pUrl, CURLOPT_POST, 1);
+	curl_easy_setopt(pUrl, CURLOPT_POSTFIELDS, pData); // Post请求的数据
+	curl_easy_setopt(pUrl, CURLOPT_URL, pUrl);
+	strResp = curl_easy_perform(pUrl); // 开始执行
+	return UTILS_RTMSG_OK;
+}
+*/
+
+
