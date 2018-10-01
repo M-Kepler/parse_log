@@ -64,7 +64,7 @@ typedef unordered_multimap<string, string>::iterator LogMapKeySet;
 class CLbmRiskWarning
 {
 public:
-	CLbmRiskWarning();
+	CLbmRiskWarning(int m_iThreadPoolCount) : m_clThreadPool(m_iThreadPoolCount) {};
 	~CLbmRiskWarning();
 
 	/*

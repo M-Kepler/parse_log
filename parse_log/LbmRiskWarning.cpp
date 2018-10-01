@@ -1,10 +1,13 @@
 #include "LbmRiskWarning.h"
 
 
-CLbmRiskWarning::CLbmRiskWarning() :m_clThreadPool(m_iThreadPoolCount)
+/*
+CLbmRiskWarning::CLbmRiskWarning(int m_iThreadPoolCount) :m_clThreadPool(m_iThreadPoolCount)
 {
 	// TODO 获取一些初始化需要的参数
+	cout << "ddddddddd" << endl;
 }
+*/
 
 
 CLbmRiskWarning::~CLbmRiskWarning()
@@ -358,8 +361,6 @@ void CLbmRiskWarning::ParseLog(ifstream& file, streamsize llFileSize, streampos 
 	streampos pNewPos;
 	thread *threads = new thread[iThreadCount];
 
-	CLbmRiskWarning clLbmRiskWarning;
-
 	if ((m_utilsError = m_clUtils.GetConfigValue(strMsgKey, "MsgKey")) != UTILS_RTMSG_OK)
 	{
 		LOG(ERROR) << "获取配置MsgKey失败" << endl;
@@ -427,11 +428,11 @@ void CLbmRiskWarning::ParseLog(ifstream& file, streamsize llFileSize, streampos 
 
 			// 扫描map的时间很短的, 但是发送的时间很长, 必须做成异步的
 			TimeoutScan(m_allLogMap, iAnsNum);
-			// 不关心异步操作的返回值
-			/*
-			thread WatchRetJob(&CUtils::GetWebServiceRet, clUtils, std::ref(WebServiceRet));
+
+			// FIXME 不关心异步操作的返回值
+			// thread WatchRetJob(&CUtils::GetWebServiceRet, m_clUtils, std::ref(m_vecWebServiceRet));
 			// WatchRetJob.detach();
-			*/
+
 		}
 		else
 		{
@@ -516,6 +517,8 @@ void CLbmRiskWarning::ParseLog(ifstream& file, streamsize llFileSize, streampos 
 				if (m_clUtils.bIsNextDay())
 				{
 					// 时间已经跨越到新一天,运行结束; 关闭文件并找新一天的文件
+
+					// WatchRetJob.join();
 					break;
 				}
 			} while (llFileSize <= 0);

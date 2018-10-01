@@ -153,7 +153,7 @@ int test(int argv, char* argc[])
 
 	// ¶ÁÈ¡ÎÄ¼þ
 	CUtils clUtils;
-	CLbmRiskWarning clLbmRiskWarning;
+	CLbmRiskWarning clLbmRiskWarning(8);
 
 	ifstream file;
 
@@ -590,7 +590,7 @@ int main(int argv, char* argc[])
 
 	ifstream file;
 	CUtils clUtils;
-	CLbmRiskWarning clLbmRiskWarning;
+	CLbmRiskWarning clLbmRiskWarning(8);
 	CGlog *p_glog = CGlog::GetInstance();
 
 	while (1)

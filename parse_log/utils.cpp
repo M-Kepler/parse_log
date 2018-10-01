@@ -547,6 +547,7 @@ bool CUtils::bIsNextDay()
 
 	strftime(stCurrSysTime.pDate, sizeof(m_stCurrSysTime.pDate), pDataFormat, localtime(&timep));
 
+	cout << stCurrSysTime.pDate << "\t" << m_stCurrSysTime.pDate << endl;
 	// 新的一天
 	if (strcmp(stCurrSysTime.pDate, m_stCurrSysTime.pDate) != 0)
 	{
