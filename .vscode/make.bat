@@ -1,0 +1,1 @@
+bash -c "cd parse_log && make clean && make %1"

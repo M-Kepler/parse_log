@@ -27,7 +27,7 @@ GLOG_LIB_PATH = $(PRJ_PATH)/glog/unix/lib
 DEBUG_FLAG = _DEBUG
 
 # DEBUG_OPS = -Wall
-DEBUG_OPS =
+DEBUG_OPS = -Wall -g
 
 # -g -rdynamic
 
@@ -44,7 +44,7 @@ I_INCLUDES = -I$(PRJ_PATH) -I$(PRJ_PATH)/glog/unix/include
 CFLAGS=
 
 # cpp编译器的优化选项
-CPPFLAGS= $(I_INCLUDES)
+CPPFLAGS= -no-pie $(I_INCLUDES)
 
 # 静态库名称
 LIBS =-lglog
