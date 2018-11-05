@@ -14,24 +14,26 @@ int CGlog::InitGlog()
 	string Value_Log_Path;
 	string Value_LogFile_Max_Size;
 	string Value_Log_Buf_Secs;
-	char* ConfigPath;
 
-	ConfigPath = GetConfigPath();
 	Key_Log_Lvl = "Log_Lvl";
 	Key_LogFile_Max_Size = "LogFile_Max_Size";
 	Key_Log_Path = "Log_Path";
 	Key_Log_Buf_Secs = "Log_Buf_Secs";
 	Section = "GLOG";
 
-	clIniFile.load(ConfigPath);
-
-	if ((iRetCode = clIniFile.getValue(Section, Key_Log_Lvl, Value_Log_Lvl)) != RET_OK
-		|| (iRetCode = clIniFile.getValue(Section, Key_Log_Path, Value_Log_Path)) != RET_OK
-		|| (iRetCode = clIniFile.getValue(Section, Key_LogFile_Max_Size, Value_LogFile_Max_Size)) != RET_OK
-		|| (iRetCode = clIniFile.getValue(Section, Key_Log_Buf_Secs, Value_Log_Buf_Secs)) != RET_OK
+	CUtils clUtils;
+	UtilsError utilsError;
+	// ªÒ»°≈‰÷√
+	if ((utilsError = clUtils.GetConfigValue(Value_Log_Lvl, Key_Log_Lvl, Section)) != UTILS_RTMSG_OK
+		|| (utilsError = clUtils.GetConfigValue(Value_Log_Path, Key_Log_Path, Section)) != UTILS_RTMSG_OK
+		|| (utilsError = clUtils.GetConfigValue(Value_LogFile_Max_Size, Key_LogFile_Max_Size, Section)) != UTILS_RTMSG_OK
+		|| (utilsError = clUtils.GetConfigValue(Value_Log_Buf_Secs, Key_Log_Buf_Secs, Section)) != UTILS_RTMSG_OK
 		)
 	{
-		return RET_ERR;
+		LOG(ERROR) << "ªÒ»°≈‰÷√ ß∞‹, ¥ÌŒÛ¬Î: " << utilsError << endl;
+		// TODO “Ï≥£≈◊≥ˆ
+		abort();
+		return utilsError;
 	}
 
 	// …Ë÷√log¬∑æ∂
@@ -82,12 +84,6 @@ bool CGlog::DirExist()
 	{
 		return true;
 	}
-}
-
-
-char* CGlog::GetConfigPath()
-{
-	return ConfigPath;
 }
 
 

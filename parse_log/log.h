@@ -7,7 +7,7 @@
 #include <glog/logging.h>
 #include <string>
 #include "inifile.h"
-
+#include "utils.h"
 #ifdef OS_IS_LINUX
 #include <unistd.h>
 #else
@@ -51,10 +51,8 @@ public:
 	void CloseGlog();
 	bool DirExist();
 	void SetLogDir(char*);
-	char* GetConfigPath();
 
 private:
-	char* ConfigPath = (char*)"./runlog_config.ini";
 	char* LogDir = (char*)"./log";
 
 };

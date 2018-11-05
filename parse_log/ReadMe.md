@@ -31,7 +31,6 @@ u版runlog
 
 ## TODO
 
-[ ] KCXP的日志? 三方网关的日志?
 [*] Linux下要求能编译通过
 [*] **定时**扫描功能
 [*] 文件在实时增长
@@ -47,6 +46,9 @@ u版runlog
     [ ] 要知道第二天日志就跑到另一个文件夹下去了
 	[ ] 做成守护进程? 怎么减少资源消耗
 [*] 一个请求分割多行的情况(不处理)
+
+[ ] TODO 三方网关的日志
+
 
 ## FIXME
 
@@ -65,8 +67,11 @@ u版runlog
 ### 编译安装
 
 * [glog下载和使用](https://blog.csdn.net/Pig_Pig_Bang/article/details/81632962)
-
+* [glog windows编译](http://www.cnblogs.com/21207-iHome/p/9297329.html)
+* [glog 功能修改](https://blog.csdn.net/tomisaboy/article/details/51418845)
 * [glog unix下编译使用](https://blog.csdn.net/csm201314/article/details/75094527)
+
+> 由于有的项目中用了dll,所以glog也要用dll方式编译,使用方法都一样
 
 ```
 1. 安装工具

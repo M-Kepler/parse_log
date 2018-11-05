@@ -14,6 +14,8 @@
 #include <curl/curl.h>
 #include "mylibcurl.h"
 */
+#include <iomanip>
+#include <stdio.h>
 
 using namespace std;
 
@@ -585,8 +587,43 @@ int test(int argv, char* argc[])
 }
 
 
+void getGlogFilename()
+{
+	struct ::tm tm_time;
+	time_t timestamp = time(NULL);
+
+#ifdef OS_IS_LINUX
+	localtime_r(&timestamp, &tm_time);
+#else
+	localtime_s(&tm_time, &timestamp);
+#endif
+
+	ostringstream time_pid_stream;
+	time_pid_stream.fill('0');
+	time_pid_stream << 1900 + tm_time.tm_year
+		<< setw(2) << 1 + tm_time.tm_mon
+		<< setw(2) << tm_time.tm_mday
+		<< '-'
+		<< setw(2) << tm_time.tm_hour
+		<< setw(2) << tm_time.tm_min
+		<< setw(2) << tm_time.tm_sec
+		<< '.'
+		<< GetCurrentThreadId();
+
+	const string& time_pid_string = time_pid_stream.str();
+	// string string_filename = base_filename_ + filename_extension_ + time_pid_string;
+	string string_filename = "INFO.log" + time_pid_string;
+	char* filename = (char*)string_filename.c_str();
+	cout << filename << endl;
+}
+
+
+
+
 int main(int argv, char* argc[])
 {
+
+	getGlogFilename();
 
 	ifstream file;
 	CUtils clUtils;
