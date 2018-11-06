@@ -127,7 +127,8 @@ UtilsError CLbmRiskWarning::multi_thread(ifstream &file)
 		if (strstr(strLastLine.c_str(), strReq) != NULL)
 		{
 			file.clear();
-			file.seekg(-(iLineLen), ios::end);
+			// file.seekg(-(iLineLen), ios::end);  // 最后一行还有个回车符啊
+			file.seekg(-(iLineLen + 1), ios::end);
 			llLastLinePos = file.tellg();
 		}
 		else
@@ -413,6 +414,7 @@ void CLbmRiskWarning::ParseLog(ifstream& file, streamsize llFileSize, streampos 
 				}
 			}
 			// 把该数据块的行全插到一个map中
+			/*
 			for (int i = 0; i < iThreadCount; ++i)
 			{
 				LogMapKeySet p = (m_pLogMaps + i)->begin();
@@ -428,6 +430,7 @@ void CLbmRiskWarning::ParseLog(ifstream& file, streamsize llFileSize, streampos 
 
 			// 扫描map的时间很短的, 但是发送的时间很长, 必须做成异步的
 			TimeoutScan(m_allLogMap, iAnsNum);
+			*/
 
 			// FIXME 不关心异步操作的返回值
 			// thread WatchRetJob(&CUtils::GetWebServiceRet, m_clUtils, std::ref(m_vecWebServiceRet));
@@ -514,6 +517,23 @@ void CLbmRiskWarning::ParseLog(ifstream& file, streamsize llFileSize, streampos 
 				file.seekg(0, ios::end); // 文件指针指到文件末尾
 				pNewPos = file.tellg(); // 新的文件指针
 				llFileSize = pNewPos - pCurrPos;
+
+				for (int i = 0; i < iThreadCount; ++i)
+				{
+					LogMapKeySet p = (m_pLogMaps + i)->begin();
+					LogMapKeySet end = (m_pLogMaps + i)->end();
+					for (; p != end; ++p)
+					{
+						m_allLogMap.insert(pair<string, string>(p->first, p->second));
+					}
+					// 清理掉线程的子map
+					LogMap *ThreadMap = m_pLogMaps + i;
+					ThreadMap->clear();
+				}
+
+				// 扫描map的时间很短的, 但是发送的时间很长, 必须做成异步的
+				TimeoutScan(m_allLogMap, iAnsNum);
+
 				if (m_clUtils.bIsNextDay())
 				{
 					// 时间已经跨越到新一天,运行结束; 关闭文件并找新一天的文件
@@ -521,6 +541,8 @@ void CLbmRiskWarning::ParseLog(ifstream& file, streamsize llFileSize, streampos 
 					// WatchRetJob.join();
 					break;
 				}
+
+				LOG(INFO) << "正在等待文件增长..." << endl;
 			} while (llFileSize <= 0);
 
 			LOG(INFO) << endl;
