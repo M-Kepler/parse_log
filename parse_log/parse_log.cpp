@@ -630,11 +630,12 @@ int main(int argv, char* argc[])
 	CLbmRiskWarning clLbmRiskWarning(8);
 	CGlog *p_glog = CGlog::GetInstance();
 
-	while (1)
+	while (true)
 	{
 
 		if (UTILS_RTMSG_OK != clUtils.LoadFile(file))
 		{
+			Sleep(2000);
 			continue;
 		}
 		else
@@ -648,11 +649,16 @@ int main(int argv, char* argc[])
 				LOG(INFO) << "==============-------------------------【" << clUtils.m_stCurrSysTime.pDate << "】的日志文件处理完毕 -------------------------==============" << endl;
 				LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
 				// 当天的处理完了, 要开始处理第二天的文件了
+				// CGlog *p_glog = CGlog::GetInstance();
+				p_glog->CloseGlog();
+				p_glog->InitGlog();
+				LOG(INFO) << "新一天处理开始" << endl;
+
 				continue;
 			}
 		}
 	}
 
-	system("pause");
+	// system("pause");
 	return 0;
 }
