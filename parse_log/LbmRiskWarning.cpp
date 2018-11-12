@@ -155,6 +155,33 @@ UtilsError CLbmRiskWarning::multi_thread(ifstream &file)
 	LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
 	LOG(INFO) << "需分析文件大小: " << llFileSize << "\t分析开始位置: " << llStart << "\t分析结束位置: " << llEndFilePos << endl;
 
+	/* 文件中最后一行是ans的时候, 会死循环 */
+	streampos pNewPos;
+	while (llFileSize <= 0)
+	{
+		std::chrono::milliseconds TimeOut(iScanTime);
+		// Sleep(iScanTime*SLEEP_MULTIPLE);
+		std::this_thread::sleep_for(TimeOut);
+		file.clear();
+		file.seekg(0, ios::end); // 文件指针指到文件末尾
+		pNewPos = file.tellg(); // 新的文件指针
+		llFileSize = pNewPos - pCurrPos;
+
+		// 扫描map的时间很短的, 但是发送的时间很长, 必须做成异步的
+		TimeoutScan(m_allLogMap, iAnsNum);
+
+		if (m_clUtils.bIsNextDay())
+		{
+			// 时间已经跨越到新一天,运行结束; 关闭文件并找新一天的文件
+			// WatchRetJob.join();
+			break;
+		}
+
+		// 该条日志只显示5次
+		LOG_FIRST_N(INFO, 5) << "正在等待文件增长..." << endl;
+		// m_clUtils.logging(UTILS_LOGLVL_NORMAL, "正在等待文件增长...");
+	}
+
 	ParseLog(file, llFileSize, pCurrPos, strLoadSize, llMaxSize, llStart, iThreadCount, iAnsNum, iScanTime);
 
 	// 清理
@@ -542,7 +569,9 @@ void CLbmRiskWarning::ParseLog(ifstream& file, streamsize llFileSize, streampos 
 					break;
 				}
 
-				LOG(INFO) << "正在等待文件增长..." << endl;
+				// LOG(INFO) << "正在等待文件增长..." << endl;
+				LOG_FIRST_N(INFO, 5) << "正在等待文件增长..." << endl;
+
 			} while (llFileSize <= 0);
 
 			LOG(INFO) << endl;
