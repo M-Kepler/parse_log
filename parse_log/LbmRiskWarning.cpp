@@ -277,9 +277,9 @@ void CLbmRiskWarning::TimeoutScan(unordered_multimap<string, string> &mymap, int
 		abort();
 	}
 
-	LOG(INFO) << endl;
-	LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
-	LOG(INFO) << "allLogMap.size(): " << m_allLogMap.size() << endl;
+	// LOG(INFO) << endl;
+	// LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
+	// LOG(INFO) << "allLogMap.size(): " << m_allLogMap.size() << endl;
 	for (; begin != end; )
 	{
 		if (mymap.count(begin->first) < iAnsNum)

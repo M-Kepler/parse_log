@@ -197,10 +197,20 @@ void CUtils::SysNowTime(const char* pDataFormat, const char* pTimeFormat)
 
 time_t CUtils::GetCurrentTimeMs()
 {
+	auto time_now = chrono::system_clock::now();
+	auto duration_in_ms = chrono::duration_cast<chrono::milliseconds>(time_now.time_since_epoch());
+	return duration_in_ms.count();
+}
+
+
+/* // 这种方法获取的时间比实际时间大
+time_t CUtils::GetCurrentTimeMs()
+{
 	time_t currTime;
 	currTime = time(NULL);
 	return currTime * 1000 + clock();
 }
+*/
 
 
 UtilsError CUtils::TailLine(ifstream &file, int iLineNum, vector<string>& vecRetStr)
@@ -547,7 +557,7 @@ bool CUtils::bIsNextDay()
 
 	strftime(stCurrSysTime.pDate, sizeof(m_stCurrSysTime.pDate), pDataFormat, localtime(&timep));
 
-	cout << stCurrSysTime.pDate << "\t" << m_stCurrSysTime.pDate << endl;
+	// cout << stCurrSysTime.pDate << "\t" << m_stCurrSysTime.pDate << endl;
 	// 新的一天
 	if (strcmp(stCurrSysTime.pDate, m_stCurrSysTime.pDate) != 0)
 	{
