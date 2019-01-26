@@ -608,7 +608,11 @@ void getGlogFilename()
 		<< setw(2) << tm_time.tm_min
 		<< setw(2) << tm_time.tm_sec
 		<< '.'
+#ifdef OS_IS_LINUX
+		<< std::this_thread::get_id();
+#else
 		<< GetCurrentThreadId();
+#endif
 
 	const string& time_pid_string = time_pid_stream.str();
 	// string string_filename = base_filename_ + filename_extension_ + time_pid_string;
@@ -635,7 +639,8 @@ int main(int argv, char* argc[])
 
 		if (UTILS_RTMSG_OK != clUtils.LoadFile(file))
 		{
-			Sleep(2000);
+			std::this_thread::sleep_for(std::chrono::seconds(2));
+			// Sleep(2000);
 			continue;
 		}
 		else
