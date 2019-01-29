@@ -47,7 +47,6 @@ UtilsError CLbmRiskWarning::multi_thread(ifstream &file)
 		)
 	{
 		LOG(ERROR) << "获取配置失败, 错误码: " << m_utilsError << endl;
-		// TODO 异常抛出
 		return m_utilsError;
 	}
 	iThreadCount = stoi(strThreadCount);
@@ -243,8 +242,7 @@ void CLbmRiskWarning::ParseMsgLine(vector<string> vecStr, int id, string strKey)
 			MsgId = m_clUtils.GetMsgValue(vecStr[i], strKey);
 			if (MsgId.empty())
 			{
-				// XXX
-				// 没有MsgId的串为非req/ans 串不需要插入到map中
+				// XXX 没有MsgId的串为非req/ans 串不需要插入到map中
 			}
 			else
 			{
@@ -263,7 +261,7 @@ void CLbmRiskWarning::TimeoutScan(unordered_multimap<string, string> &mymap, int
 	string strModule;
 	string strPostData;
 	string strRetCode;
-	string strResponse;
+	// string strResponse;
 
 	auto begin = mymap.begin();
 	auto end = mymap.end();
@@ -273,7 +271,6 @@ void CLbmRiskWarning::TimeoutScan(unordered_multimap<string, string> &mymap, int
 	if ((m_utilsError = m_clUtils.GetConfigValue(strModule, "Module")) != UTILS_RTMSG_OK)
 	{
 		LOG(ERROR) << "获取配置失败, 错误码: " << m_utilsError << endl;
-		// TODO 异常抛出
 		abort();
 	}
 
@@ -361,7 +358,7 @@ void CLbmRiskWarning::TimeoutScan(unordered_multimap<string, string> &mymap, int
 
 			// WebService
 			// WebServiceRet.emplace_back(pool.enqueue(&CUtils::WebServiceAgent, m_clUtils, strPostData, strResponse));
-			m_vecWebServiceRet.emplace_back(m_clThreadPool.enqueue(&CUtils::WebServiceAgent, m_clUtils, strPostData, strResponse));
+			m_vecWebServiceRet.emplace_back(m_clThreadPool.enqueue(&CUtils::WebServiceAgent, m_clUtils, strPostData));
 
 			strPostData = "";
 		}
@@ -369,6 +366,33 @@ void CLbmRiskWarning::TimeoutScan(unordered_multimap<string, string> &mymap, int
 	}
 	// cout << "删除后allLogMap.size():   " << allLogMap.size() << endl;// debug
 }
+
+void CLbmRiskWarning::RecvThread()
+{
+    std::chrono::seconds tSpan(1); // XXX 每1秒轮询查看任务执行进度
+    while(true)
+    {
+        std::this_thread::sleep_for(std::chrono::seconds(1)); // XXX
+        for (auto result = m_vecWebServiceRet.begin(); result != m_vecWebServiceRet.end();)
+        {
+            if (result->wait_for(tSpan) != std::future_status::ready)
+            {
+				// LOG_FIRST_N(INFO, 5) << "sub thread result is not ready..." << std::endl;
+                continue;
+            }
+            if (result->wait_for(tSpan) == std::future_status::ready)
+            {
+                // 获取执行结果
+				// LOG_FIRST_N(INFO, 5) << "sub thread -- tasks is done, result: " << result->get() << std::endl;
+				if (result->get() != "28") // 根据错误码判断发送成功则删除
+				{
+					result = m_vecWebServiceRet.erase(result);
+				}
+            }
+        }
+    }
+}
+
 
 
 void CLbmRiskWarning::ParseLog(ifstream& file, streamsize llFileSize, streampos pCurrPos, string strLoadSize, streamsize llMaxSize, streamoff llStart, int iThreadCount, int iAnsNum, int iScanTime)
@@ -389,12 +413,14 @@ void CLbmRiskWarning::ParseLog(ifstream& file, streamsize llFileSize, streampos 
 	streampos pNewPos;
 	thread *threads = new thread[iThreadCount];
 
+
 	if ((m_utilsError = m_clUtils.GetConfigValue(strMsgKey, "MsgKey")) != UTILS_RTMSG_OK)
 	{
 		LOG(ERROR) << "获取配置MsgKey失败" << endl;
 		abort();
 	}
 
+	thread thread_recv = thread(&CLbmRiskWarning::RecvThread, this); // 开线程异步处理soap发送结果
 	while (llFileSize)
 	{
 		t_start = clock(); // debug
@@ -459,9 +485,6 @@ void CLbmRiskWarning::ParseLog(ifstream& file, streamsize llFileSize, streampos 
 			TimeoutScan(m_allLogMap, iAnsNum);
 			*/
 
-			// FIXME 不关心异步操作的返回值
-			// thread WatchRetJob(&CUtils::GetWebServiceRet, m_clUtils, std::ref(m_vecWebServiceRet));
-			// WatchRetJob.detach();
 
 		}
 		else
@@ -500,8 +523,7 @@ void CLbmRiskWarning::ParseLog(ifstream& file, streamsize llFileSize, streampos 
 
 		LOG(INFO) << "线程 4 开始读入位置 llThreadIndex: " << llThreadIndex << "\t实际线程 4 读入大小 llRealSize-llThreadIndex: " << llRealSize - llThreadIndex << endl;
 
-		// XXX
-		// 一行请求不可能少于70个字符吧
+		// 一行请求不可能少于70个字符
 		if ((llRealSize - llThreadIndex) > 70)
 		{
 			vecEndThreadLines = ReadLineToVec(bBufferIndex, llThreadIndex, llRealSize - llThreadIndex);
@@ -534,7 +556,6 @@ void CLbmRiskWarning::ParseLog(ifstream& file, streamsize llFileSize, streampos 
 			}
 
 			// 持续监控文件增长
-			// XXX 时间流逝到明天呢? 而且明天的日志还没有创建呢?
 			do
 			{
 				std::chrono::milliseconds TimeOut(iScanTime);
@@ -563,6 +584,7 @@ void CLbmRiskWarning::ParseLog(ifstream& file, streamsize llFileSize, streampos 
 
 				if (m_clUtils.bIsNextDay())
 				{
+					thread_recv.join();
 					// 时间已经跨越到新一天,运行结束; 关闭文件并找新一天的文件
 
 					// WatchRetJob.join();

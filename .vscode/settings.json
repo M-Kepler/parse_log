@@ -3,6 +3,8 @@
         "iostream": "cpp"
     },
     "files.exclude": {
+        "**/**.o":true,
+        "**/**.out":true,
         "**/.git": true,
         "**/.svn": true,
         "**/.hg": true,

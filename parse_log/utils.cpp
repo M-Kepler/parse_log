@@ -292,7 +292,8 @@ wstring CUtils::String2WString(const std::string& s)
 }
 
 
-string CUtils::WebServiceAgent(string strJsonData, string &strResp)
+// string CUtils::WebServiceAgent(string strJsonData, string &strResp)
+string CUtils::WebServiceAgent(string strJsonData)
 {
 	int iRetCode = 0;
 	int iRet = 0;
@@ -307,6 +308,7 @@ string CUtils::WebServiceAgent(string strJsonData, string &strResp)
 	string strServiceName; // 服务名
 	string strFullUrl; // 完整 url
 	string strHttpHeader; // 请求头
+	string strResp;
 	UtilsError utilsError;
 
 	if ((utilsError = GetConfigValue(strWebServiceUrl, "WebServiceUrl", "CURL")) != UTILS_RTMSG_OK
@@ -334,7 +336,6 @@ string CUtils::WebServiceAgent(string strJsonData, string &strResp)
 	LOG(INFO) << strJsonData << endl;
 	if (iRetCode != SOAP_OK)
 	{
-
 		LOG(ERROR) << "==============-------------------------==============" << "webservice 调用失败, 错误码为: " << iRetCode << "==============-------------------------==============" << endl;
 		return to_string(iRetCode);
 	}
@@ -343,8 +344,6 @@ string CUtils::WebServiceAgent(string strJsonData, string &strResp)
 		// FIXME 收到的回复有中文乱码
 		strResp = *(pstrResponse->return_);
 		LOG(INFO) << "==============-------------------------==============" << "webservice 调用成功! " << "==============-------------------------==============" << endl;
-		// LOG(INFO) << "==============-------------------------==============" << "webservice 返回的数据为: " << "==============-------------------------==============" << endl;
-		// LOG(INFO) << strResp << endl;
 		LOG(INFO) << "==============-------------------------==============-------------------------==============" << endl;
 		return strResp;
 	}

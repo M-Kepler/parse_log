@@ -159,10 +159,8 @@ public:
 	/*
 	 * @brief       调用webservice
 	 * @param[in]   strJsonData			发送的数据
-	 * @param[in]   &strResp			返回的数据
-	 * @return      string				返回的数据
 	 */
-	string WebServiceAgent(string strJsonData, string &strResp);
+	string WebServiceAgent(string strJsonData);
 
 
 	/*

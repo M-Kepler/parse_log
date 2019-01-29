@@ -9,12 +9,11 @@
 #include <vector>
 #include <time.h>
 
-#include <thread>
-#include <future>
 #include "ThreadPool.h"
 
 #include "utils.h"
 #include "define.h"
+
 
 #ifdef OS_IS_LINUX
 #else
@@ -128,6 +127,15 @@ public:
 	 // void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum, std::promise<string> prom);
 	void TimeoutScan(unordered_multimap<string, string> &mymap, int iAnsNum);
 
+    /*
+	 * @brief	:	发送消息线程
+	 				之前是在webserviceagent内部使用glog把结果打印到日志上, 然后MFC读入日志文件处理
+					缺陷是没办法重发
+	 * @param	: 
+	 * @return	: 
+	 */
+    void RecvThread();
+
 	/*
 	 * @brief	关键处理函数
 	 * @param   file			打开的文件
@@ -159,7 +167,7 @@ private:
 	ThreadPool m_clThreadPool;
 
 	vector<string> vecThreadLines, vecEndThreadLines;
-	vector< future<string> > m_vecWebServiceRet;
+	std::vector<std::shared_future<string>> m_vecWebServiceRet;
 
 };
 
