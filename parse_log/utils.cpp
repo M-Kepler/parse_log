@@ -47,7 +47,7 @@ UtilsError CUtils::LoadFile(ifstream &file)
 
 	if (!file)
 	{
-		LOG(ERROR) <<  "打开文件失败, 文件: \"" << strFileName << "\" 不存在!" << endl;
+		LOG_FIRST_N(ERROR, 5) <<  "打开文件失败, 文件: \"" << strFileName << "\" 不存在!" << endl;
 		return UTILS_FILE_ERROR;
 	}
 	else

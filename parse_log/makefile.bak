@@ -12,24 +12,11 @@
 
 .PHONY: all
 
-# **********************************************************
-# 宏/变量
-# **********************************************************
-
-TARGET = LbmRiskWarning
-
-SOURCES = $(wildcard *.c *.cpp)
-
-OBJS = $(patsubst %.c,%.o, $(patsubst %.cpp,%.o, $(SOURCES)))
-
 CURR_PWD = $(shell pwd)
 
 PRJ_PATH = $(CURR_PWD)
 
-
-CC = gcc
-
-XX = g++
+CC = g++
 
 C++STD = --std=c++11
 
@@ -39,15 +26,15 @@ GLOG_LIB_PATH = $(PRJ_PATH)/glog/unix/lib
 
 DEBUG_FLAG = _DEBUG
 
-DEBUG_OPS = -Wall
+# DEBUG_OPS = -Wall
+DEBUG_OPS = -g
 
 # -g -rdynamic
 
 L_INCLUDE = -L$(GLOG_LIB_PATH) 
 
-
 # **********************************************************
-# 选项
+# Flags
 # **********************************************************
 
 # 头文件
@@ -71,20 +58,43 @@ LDFLAGS = $(L_INCLUDE)
 # LFLAG = -shared $(L_INCLUDE)
 
 
-# **********************************************************
-# 编译
-# **********************************************************
-
-all : $(TARGET)
+all : main.out 
 
 
-$(TARGET):$(OBJS)
-	$(XX) $(C++STD) $(CPPFLAGS) $(DFLAGS) $^ -o $@ -fPIC $(LDFLAGS) $(LIBS) -lpthread
+main.out : stdsoap2.o soapSoapServiceSoapBindingProxy.o soapC.o utils.o inifile.o log.o LbmRiskWarning.o parse_log.o
+	$(CC) $(C++STD) $(CPPFLAGS) $(DFLAGS) $^ -o $@ $(LDFLAGS) $(LIBS) -lpthread
 
 
-%.o : %.cpp
-	$(XX) $(C++STD) $(CPPFLAGS) $(DFLAGS) -c $^ -o $@ $(LDFLAGS) $(LIBS)
+parse_log.o : parse_log.cpp
+	$(CC) $(C++STD) $(CPPFLAGS) $(DFLAGS) -c $^ -o $@
 
+
+LbmRiskWarning.o : LbmRiskWarning.cpp
+	$(CC) $(C++STD) $(CPPFLAGS) $(DFLAGS) -c $^ -o $@
+
+
+stdsoap2.o : stdsoap2.cpp
+	$(CC) $(C++STD) $(CPPFLAGS) $(DFLAGS) -c $^ -o $@
+
+
+soapC.o : soapC.cpp
+	$(CC) $(C++STD) $(CPPFLAGS) $(DFLAGS) -c $^ -o $@
+
+
+soapSoapServiceSoapBindingProxy.o : soapSoapServiceSoapBindingProxy.cpp
+	$(CC) $(C++STD) $(CPPFLAGS) $(DFLAGS) -c $^ -o $@
+
+
+utils.o : utils.cpp
+	$(CC) $(C++STD) $(CPPFLAGS) $(DFLAGS) -c $^ -o $@
+
+
+log.o : log.cpp
+	$(CC) $(C++STD) $(CPPFLAGS) $(DFLAGS) -c $^ -o $@ $(LDFLAGS) $(LIBS)
+
+
+inifile.o : inifile.cpp
+	$(CC) $(C++STD) $(CPPFLAGS) $(DFLAGS) -c $^ -o $@
 
 
 clean :

@@ -372,7 +372,7 @@ void CLbmRiskWarning::RecvThread()
     std::chrono::seconds tSpan(1); // XXX 每1秒轮询查看任务执行进度
     while(true)
     {
-        std::this_thread::sleep_for(std::chrono::seconds(1)); // XXX
+        std::this_thread::sleep_for(tSpan);
         for (auto result = m_vecWebServiceRet.begin(); result != m_vecWebServiceRet.end();)
         {
             if (result->wait_for(tSpan) != std::future_status::ready)
@@ -384,7 +384,7 @@ void CLbmRiskWarning::RecvThread()
             {
                 // 获取执行结果
 				// LOG_FIRST_N(INFO, 5) << "sub thread -- tasks is done, result: " << result->get() << std::endl;
-				if (result->get() != "28") // 根据错误码判断发送成功则删除
+				if (result->get() == "0") // 根据错误码判断发送成功则删除
 				{
 					result = m_vecWebServiceRet.erase(result);
 				}

@@ -10,7 +10,12 @@
 #include "utils.h"
 #ifdef OS_IS_LINUX
 #include <unistd.h>
+#include <dirent.h>
+#include <errno.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #else
+#include <windows.h>
 #include <io.h>
 #endif
 
@@ -49,7 +54,7 @@ public:
 
 	int InitGlog();
 	void CloseGlog();
-	bool DirExist();
+	bool DirExist(); // 不需要了
 	void SetLogDir(char*);
 
 private:

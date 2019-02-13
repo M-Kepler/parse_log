@@ -39,11 +39,44 @@ int CGlog::InitGlog()
 	// 设置log路径
 	SetLogDir((char*)Value_Log_Path.c_str());
 
+#ifdef OS_IS_WINDOWS
+	WIN32_FIND_DATA stFindData;
+	HANDLE hFind = FindFirstFile(szInterPath, &stFindData);
+	if ((INVALID_HANDLE_VALUE == hFind) || !(stFindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+	{
+		if (!CreateDirectory(szInterPath, NULL))
+		{
+			iRetCode = XSDK_KO;
+			snprintf(szRetMsg, sizeof(szRetMsg) - 1, "创建目录失败! [%s]", szInterPath);
+			LOG(ERROR) << szRetMsg << endl;
+		}
+	}
+	if (INVALID_HANDLE_VALUE != hFind)
+	{
+		FindClose(hFind);
+	}
+#else
+	DIR *pDirExists = NULL;
+	pDirExists = opendir(LogDir);
+	if (!pDirExists && errno == ENOENT)
+	{
+		if (mkdir(LogDir, 0750) != 0)
+		{
+			LOG(ERROR) << "log目录创建失败" << endl;
+		}
+	}
+	if (pDirExists)
+	{
+		closedir(pDirExists);
+	}
+#endif
+
+	/*
 	if (!DirExist())
 	{
-		// WARNING 报Log文件夹不存在的警告
 		LOG(WARNING) << "log目录不存在" << endl;
 	}
+	*/
 
 	google::SetLogFilenameExtension(".log");
 	FLAGS_logbufsecs = stoi(Value_Log_Buf_Secs);
@@ -71,7 +104,6 @@ void CGlog::SetLogDir(char* logpath)
 {
 	LogDir = logpath;
 }
-
 
 bool CGlog::DirExist()
 {

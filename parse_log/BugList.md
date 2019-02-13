@@ -178,7 +178,7 @@ MsgId=0D2C8E8E16BF4E7EADA4684D7FA29E9A,20180908-201040-624,Ans:144624
 	linux和windows的编码要注意一下
 
 
- ### 文件产生速度太快时, 如没2毫秒插入一行req一行ans时, 会掉进getRealSize函数的死循环中
+ ### 文件产生速度太快时, 如每2毫秒插入一行req一行ans时, 会掉进getRealSize函数的死循环中
 
  > 不是这个原因
 
@@ -191,16 +191,6 @@ MsgId=0D2C8E8E16BF4E7EADA4684D7FA29E9A,20180908-201040-624,Ans:144624
 	3. while ((file->peek() != EOF) && ((file->get()!= '\n') || (file->get()!= '\0')))
 ```
 * 【修复】：添加EOF判断
-
-
-
- ### 调整指针指向末尾的时候, 会不会可能出现指针的位置刚好处在一行的中间
-
- ## 有的超时的数据不是完整一行的
-
-会在clUtils.StringToMs(begin->second);的时候爆出来
-一层层往上打abort()并利用监视器追溯, 最终追溯到strToken = strtok_s(pLineBuffer, strDelim, &nextToken);
-怀疑是strtok把数据截断了,在调用strtok之前还是完整的一行
 
 
 
@@ -228,7 +218,7 @@ https://blog.csdn.net/pengh56/article/details/78244509
 ### TimeOutScan时, 对错误数据要异步发webservice
 
 > 原本是for循环扫描map的时候, 发现不合格的数据会发送webservice, 发完后再进入下一层循环;
-> 这样肯定是不行的,如果A发送失败则会阻塞在哪里很久
+> 这样肯定是不行的,如果A发送失败则会阻塞在那里等发完毕才处理下一条
 
 * 改造成异步的形式
 
