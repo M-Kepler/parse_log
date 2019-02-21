@@ -5,6 +5,8 @@ int CGlog::InitGlog()
 {
 	IniFile clIniFile;
 	int iRetCode;
+	char szRetMsg[256 + 1];
+	memset(szRetMsg, 0x00, sizeof(szRetMsg));
 	string Section;
 	string Key_Log_Lvl;
 	string Key_Log_Path;
@@ -38,24 +40,7 @@ int CGlog::InitGlog()
 
 	// 设置log路径
 	SetLogDir((char*)Value_Log_Path.c_str());
-
-#ifdef OS_IS_WINDOWS
-	WIN32_FIND_DATA stFindData;
-	HANDLE hFind = FindFirstFile(szInterPath, &stFindData);
-	if ((INVALID_HANDLE_VALUE == hFind) || !(stFindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-	{
-		if (!CreateDirectory(szInterPath, NULL))
-		{
-			iRetCode = XSDK_KO;
-			snprintf(szRetMsg, sizeof(szRetMsg) - 1, "创建目录失败! [%s]", szInterPath);
-			LOG(ERROR) << szRetMsg << endl;
-		}
-	}
-	if (INVALID_HANDLE_VALUE != hFind)
-	{
-		FindClose(hFind);
-	}
-#else
+#ifdef OS_IS_LINUX
 	DIR *pDirExists = NULL;
 	pDirExists = opendir(LogDir);
 	if (!pDirExists && errno == ENOENT)
@@ -69,7 +54,23 @@ int CGlog::InitGlog()
 	{
 		closedir(pDirExists);
 	}
+#else
+	WIN32_FIND_DATA stFindData;
+	HANDLE hFind = FindFirstFile(LogDir, &stFindData);
+	if ((INVALID_HANDLE_VALUE == hFind) || !(stFindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+	{
+		if (!CreateDirectory(LogDir, NULL))
+		{
+			snprintf(szRetMsg, sizeof(szRetMsg) - 1, "创建目录失败! [%s]", LogDir);
+			LOG(ERROR) << szRetMsg << endl;
+		}
+	}
+	if (INVALID_HANDLE_VALUE != hFind)
+	{
+		FindClose(hFind);
+	}
 #endif
+
 
 	/*
 	if (!DirExist())

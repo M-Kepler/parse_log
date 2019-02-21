@@ -383,10 +383,16 @@ void CLbmRiskWarning::RecvThread()
             if (result->wait_for(tSpan) == std::future_status::ready)
             {
                 // 获取执行结果
-				// LOG_FIRST_N(INFO, 5) << "sub thread -- tasks is done, result: " << result->get() << std::endl;
-				if (result->get() == "0") // 根据错误码判断发送成功则删除
+				// TODO 返回字符串是一个json, 要从json解析出来
+				string retCode = m_clUtils.ParseJson(result->get(), "MSG_CODE");
+				if (retCode == "0") // 根据错误码判断发送成功则删除
 				{
+					LOG(INFO) << "Send Task is done, result:【" << result->get() << "】" << std::endl;
 					result = m_vecWebServiceRet.erase(result);
+				}
+				else
+				{
+					LOG(ERROR) << "Send Tasks Error, Sresult: " << result->get() << std::endl;
 				}
             }
         }

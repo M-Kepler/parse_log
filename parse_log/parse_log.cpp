@@ -106,8 +106,7 @@ const std::string getCurrentSystemTime()
 	return std::string(date);
 }
 
-
-void task(std::promise<string>& prom, string strJsonData, string &strResp)
+void task(std::promise<string> &prom, string strJsonData, string &strResp)
 {
 	int x = 0;
 	 // 这里一般一个非常耗时耗cpu的操作，在此过程中得到x的最终值，这里我们直接赋值为10
@@ -206,7 +205,7 @@ int test(int argv, char* argc[])
 	std::vector< std::future<int> > results;
 
 	for (int i = 0; i < 8; ++i)
-	{ 
+	{
 		// results.emplace_back(pool.enqueue(&CUtils::WebServiceAgent, clUtils, strPostData, strResponse));
 		// results.emplace_back(pool.enqueue(clUtils.WebServiceAgent, strPostData, strResponse));
 		results.emplace_back(
@@ -622,11 +621,8 @@ void getGlogFilename()
 }
 
 
-
-
 int main(int argv, char* argc[])
 {
-
 	getGlogFilename();
 
 	ifstream file;
@@ -663,7 +659,6 @@ int main(int argv, char* argc[])
 			}
 		}
 	}
-
 	// system("pause");
 	return 0;
 }

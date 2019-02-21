@@ -204,6 +204,7 @@ public:
 	 * @return      string			组装后的json
 	 */
 	string AssembleJson(string strReqData, string strAnsData = "", int iStart = 0, int iLen = 19);
+	string ParseJson(const string ret, const string strKey);
 
 
 	/*

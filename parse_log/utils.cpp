@@ -140,7 +140,7 @@ time_t CUtils::StringToMs(string strOrig, int iStart, int iEnd)
 	{
 		time_t tm_ms = tm_s * 1000;
 		return tm_ms;
-	} 
+	}
 	else
 	{
 		// 20180202-091002-549327 取549为毫秒
@@ -206,7 +206,6 @@ time_t CUtils::GetCurrentTimeMs()
 /* // 这种方法获取的时间比实际时间大
 time_t CUtils::GetCurrentTimeMs()
 {
-	time_t currTime;
 	currTime = time(NULL);
 	return currTime * 1000 + clock();
 }
@@ -539,10 +538,38 @@ string CUtils::AssembleJson(string strReqData, string strAnsData, int iStart, in
 	writer.EndObject(); // end REQUESTS
 	writer.EndArray(); // end REQUESTS
 
-	writer.EndObject(); // end JSON 
+	writer.EndObject(); // end JSON
 
 	string strJson = strBuffer.GetString();
 	return strJson;
+}
+
+
+
+// http://einverne.github.io/post/2016/03/rapidjson-c-demo.html
+string CUtils::ParseJson(const string ret, const string strKey)
+{
+	rapidjson::Document doc;
+	doc.Parse<0>(ret.c_str());
+
+	if (doc.HasMember("ANSWERS"))
+	{
+		const rapidjson::Value & answersjson = doc["ANSWERS"];
+		for (rapidjson::SizeType i = 0; i < answersjson.Size(); ++i)
+		{
+			if (answersjson[i].HasMember("ANS_MSG_HDR"))
+			{
+				const rapidjson::Value & errorstroke = answersjson[i]["ANS_MSG_HDR"];
+				for (rapidjson::Value::ConstMemberIterator iter = errorstroke.MemberBegin(); iter != errorstroke.MemberEnd(); ++iter)
+				{
+					if(iter->name.GetString() == strKey)
+					{
+						return iter->value.GetString();
+					}
+                }
+            }
+        }
+    }
 }
 
 
